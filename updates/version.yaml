@@ -1,0 +1,7 @@
+1.0.1: First version of nerdai
+1.0.2:
+    - Create the record table
+    - create_records_table.php
+    - create_tasks_table.php
+    - create_models_tasks_table.php
+    - create_ai_models_table.php
