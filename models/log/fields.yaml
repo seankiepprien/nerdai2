@@ -1,0 +1,40 @@
+# ===================================
+#  Form Field Definitions
+# ===================================
+
+fields:
+    id:
+        label: ID
+        span: left
+        disabled: true
+    model:
+        label: AI Model
+        span: right
+        disabled: true
+    task:
+        label: Task
+        span: left
+        disabled: true
+    mode:
+        label: Mode
+        span: right
+        disabled: true
+    created_at:
+        label: Logged At
+        span: full
+        disabled: true
+    taken_prompt:
+        label: Taken Prompt
+        type: switch
+        span: full
+        disabled: true
+    request:
+        label: Request
+        type: partial
+        path: field_request
+        span: left
+    response:
+        label: Response
+        type: partial
+        path: field_response
+        span: right

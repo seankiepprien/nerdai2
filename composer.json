@@ -3,6 +3,9 @@
     "type": "october-plugin",
     "description": "No description provided yet...",
     "require": {
-        "composer/installers": "~1.0"
+        "composer/installers": "~1.0",
+        "fzaninotto/faker": "^1.9",
+        "openai-php/client": "^0.8",
+        "openai-php/laravel": "^0.8"
     }
 }

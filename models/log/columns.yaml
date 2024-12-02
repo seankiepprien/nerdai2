@@ -1,0 +1,20 @@
+# ===================================
+#  List Column Definitions
+# ===================================
+
+columns:
+    id:
+        label: ID
+        searchable: true
+    model:
+        label: AI Model
+        searchable: true
+    task:
+        label: Task
+        searchable: true
+    mode:
+        label: Mode
+        searchable: true
+    created_at:
+        label: Logged At
+        searchable: true

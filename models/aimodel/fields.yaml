@@ -12,43 +12,19 @@ fields:
         type: dropdown
         span: auto
         options:
-            OpenAi: OpenAI API
-            Huggingface: HuggingfaceAPI
+            none: None
+            OpenAI: OpenAI API
         comment: Set which API the model will be using.
-    model_description:
-        label: Model Description
-        type: aitext
-        comment: Shoft description that will be used to briefly describe this model in the Model Selection dropdown
-        span: full
-tabs:
-    fields:
-        model_card:
-            label: Model Card
-            type: markdown
-            span: full
-            tab: Model Card
-            size: huge
-        model_response_handler:
-            label: Response Handler
-            type: codeeditor
-            span: full
-            tab: Response Handler
-            language: php
-            comment: Function to handle the response in this format fn($response);
-        model_tasks:
-            label: Model Tasks
-            type: checkboxlist
-            options:
-                'text_completion': 'Text Completion'
-                'text_summarization': 'Text Summarization'
-                'text_classification': 'text Classification',
-                'text_generation': 'Text Generation',
-                'fill_mask': 'Fill Mask'
-            tab: Configuration
-            span: auto
-        tasks:
-            label: Tasks
-            type: partial
-            path: r_tasks
-            span: full
-            tab: Tasks
+    model_aimodel:
+        label: AI Model
+        type: dropdown
+        span: right
+        options:
+            gpt-3.5-turbo-instruct: GPT 3.5 Turbo Instruct
+            gpt-4o-mini: GPT 4 Mini
+            gpt-4-turbo: GPT 4 Turbo
+        comment: Set the AI Model to use.
+        trigger:
+            field: model_api
+            action: show
+            condition: value[OpenAI]

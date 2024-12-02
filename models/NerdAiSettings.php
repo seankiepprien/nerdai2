@@ -1,16 +1,18 @@
 <?php namespace Nerd\Nerdai\Models;
 
-use System\Models\SettingModel;
+use Model;
 
 /**
  * NerdAiSettings Model
  */
-class NerdAiSettings extends SettingModel
+class NerdAiSettings extends Model
 {
-    use \October\Rain\Database\Traits\Validation;
-
-    public $rules = [];
+    public $implement = [
+        'System.Behaviors.SettingsModel',
+    ];
 
     public $settingsCode = 'nerd_ai_settings';
+
     public $settingsFields = 'fields.yaml';
+
 }

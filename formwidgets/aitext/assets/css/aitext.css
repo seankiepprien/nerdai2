@@ -1,0 +1,9 @@
+.is-regenerating {
+    display: none;
+}
+html[data-ajax-progress] .is-regenerating {
+    display: block;
+}
+html[data-ajax-progress] .ai-toggle {
+    display: none;
+}

@@ -2,6 +2,6 @@
 
 interface InferenceInterface
 {
-    public function makePrompt($input): string;
-    public function getResponse($input, $options = []);
+    public function makePrompt(string|array $input): string;
+    public function getResponse(string|array $input, array $options = []);
 }

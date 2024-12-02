@@ -23,17 +23,29 @@ tabs:
                 field: enable_open_ai
                 action: show
                 condition: checked
-        openai_model:
-            label: AI Model
+        openai_api_organization:
+            label: 'API Organization'
             type: text
-            span: auto
-            placeholder: 'gpt-3.5-turbo-instruct'
+            span: full
             tab: Configurations
             trigger:
                 field: enable_open_ai
                 action: show
                 condition: checked
-        max_token:
+        openai_model:
+            label: AI Model
+            type: dropdown
+            span: auto
+            options:
+                gpt-3.5-turbo-instruct: GPT 3.5 Turbo Instruct
+                gpt-4o-mini: GPT 4 Mini
+                gpt-4-turbo: GPT 4 Turbo
+            tab: Configurations
+            trigger:
+                field: enable_open_ai
+                action: show
+                condition: checked
+        openai_api_max_token:
             label: Max Token
             type: number
             span: auto
@@ -43,113 +55,25 @@ tabs:
                 field: enable_open_ai
                 action: show
                 condition: checked
-
-        _section2:
-            label: Huggingface Hub API
-            type: section
-            comment: Find ore from Higgingface documentation
+        _openai_hint:
+            label: OpenAI Instructions
+            type: hint
+            mode: tip
             span: full
-            tab: Configurations
-        enable_huggingface_api:
-            label: Enable HuggingFace API
-            type: checkbox
-            tab: Configurations
-        huggingface_api_key:
-            label: Huggingface API Key
-            type: text
-            span: full
+            comment: <code><a href="https://platform.openai.com/docs/guides/gpt/quickstart">https://platform.openai.com/docs/guides/gpt/quickstart</a></code> <br/> For GPT 4, the max token is <strong>16384</strong> for GPT-3, its <strong>8192</strong>.
+            commentHtml: true
             tab: Configurations
             trigger:
-                field: enable_huggingface_api
+                field: enable_open_ai
                 action: show
                 condition: checked
-        enable_text_generation:
-            label: Enable Text Generation
-            type: switch
-            default: 1
-            comment: Enable or disable text generation
-            span: auto
-            tab: Configurations
-            trigger:
-                field: enable_huggingface_api
-                action: show
-                condition: checked
-        enable_text_summerization:
-            label: Enable Text Summerization
-            type: switch
-            default: 1
-            comment: Enable or disable text summerization
-            span: auto
-            tab: Configurations
-            trigger:
-                field: enable_huggingface_api
-                action: show
-                condition: checked
-        text_generation_model:
-            label: Text Generation Model
-            type: text
-            span: auto
-            default: gpt2
-            comment: The model to use for text generation
-            tab: Configurations
-            trigger:
-                field: enable_huggingface_api
-                action: show
-                condition: checked
-        enable_fill_mask:
-            label: Enable Fill Mask
-            type: switch
-            default: 1
-            comment: Enable or disable fill mask
-            span: auto
-            tab: Configurations
-            trigger:
-                field: enable_huggingface_api
-                action: show
-                condition: checked
-        enable_sentiment_analysis:
-            label: Enable Sentiment Analysis
-            type: switch
-            default: 1
-            comment: Enable or disable sentiment analysis
-            span: auto
-            tab: Configurations
-            trigger:
-                field: enable_huggingface_api
-                action: show
-                condition: checked
-        fill_mask_model:
-            label: Fill Mask Model
-            type: text
-            span: auto
-            default: distilroberta-base
-            comment: The model to use for fill mask
-            tab: Configurations
-            trigger:
-                field: enable_huggingface_api
-                action: show
-                condition: checked
-        sentiment_analysis_model:
-            label: Sentiment Analysis Model
-            type: dropdown
-            options:
-                cardiffnlp/twitter-roberta-base-sentiment: RoBERTa
-                distilbert-base-uncased-finetuned-sst-2-english: DistilBERT
-            comment: The model to use for sentiment analysis
-            span: auto
-            tab: Configurations
-            trigger:
-                field: enable_huggingface_api
-                action: show
-                condition: checked
-
         persona:
             label: Persona
             comment: Persona can affect the response of the AI, and sometimes mimics the behavior of the person associated with this persona.
             type: text
             tab: Prompting
         context:
-            tabel: Context
+            label: Context
             type: textarea
             comment: Context is additional knowledge the AI model should be aware of. If the context is relevant to the current text, it may use it in its response.
             tab: Prompting
@@ -184,13 +108,13 @@ tabs:
             type: aitext
             span: full
             tab: Testing
-        test_textarea:
-            label: Test Textarea
+        test_text_completion:
+            label: Test Text Completion
             type: aitextarea
             span: full
             tab: Testing
-        test_sentiment_analysis:
-            label: test AI Sentiment Analysis
-            type: textarea
-            span: left
+        test_richeditor:
+            label: Test Rich Editor
+            type: richeditor
+            span: full
             tab: Testing

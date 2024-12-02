@@ -1,0 +1,31 @@
+# ===================================
+#  Form Behavior Config
+# ===================================
+
+# Record name
+name: A I Model
+
+# Model Form Field configuration
+form: $/nerd/nerdai/models/aimodel/fields.yaml
+
+# Model Class name
+modelClass: Nerd\Nerdai\Models\AIModel
+
+# Default redirect location
+defaultRedirect: nerd/nerdai/aimodels
+
+# Create page
+create:
+    title: backend::lang.form.create_title
+    redirect: nerd/nerdai/aimodels/update/:id
+    redirectClose: nerd/nerdai/aimodels
+
+# Update page
+update:
+    title: backend::lang.form.update_title
+    redirect: nerd/nerdai/aimodels
+    redirectClose: nerd/nerdai/aimodels
+
+# Preview page
+preview:
+    title: backend::lang.form.preview_title

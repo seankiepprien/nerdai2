@@ -10,6 +10,5 @@ interface ClientInterface
     public function setParameters(array $parameters): void;
     public function getModel(): string;
     public function getParameters(): array;
-    public function makeClient(): void;
-    public function inferTextSummarization(string $input, array $parameters = []): array;
+    public function makeClient(): object;
 }

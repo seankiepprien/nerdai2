@@ -1,7 +1,8 @@
 <?php namespace Nerd\Nerdai\Classes\Clients;
 
+use Exception;
+use Log;
 use Nerd\Nerdai\Classes\ClientInterface;
-
 use Nerd\Nerdai\Classes\Prompts\PromptBuilder;
 use OpenAI;
 
@@ -16,8 +17,8 @@ class OpenAIClient implements ClientInterface
 {
     protected $client;
     protected string $apiKey;
-    protected string $organization = null;
-    protected array $headers = ['OpenAI-Beta', 'assistants=v1'];
+    protected ?string $organization = null;
+    protected array $headers = ['Openai-Beta', 'assistant=v1'];
     protected array $parameters = [];
     protected string $model = 'gpt-3.5-turbo-instruct';
     public function __construct(string $apiKey, string $organization = null, array $parameters)
@@ -43,6 +44,7 @@ class OpenAIClient implements ClientInterface
     {
         $this->apiKey = $key;
     }
+
     public function setOrganization(string $organization): void
     {
         $this->organization = $organization;
@@ -73,11 +75,25 @@ class OpenAIClient implements ClientInterface
         return $this->parameters;
     }
 
-    public function makeClient(): void
+    public function makeClient(): object
     {
-        $clientFactory = OpenAI::factory();
-        $clientFactory->withApiKey($this->apiKey);
-        $clientFactory->withOrganization($this->organization);
-        $clientFactory->withHeaders(...$this->headers);
+        $client = OpenAI::factory()
+            ->withApiKey($this->apiKey)
+            ->withOrganization($this->organization)
+            ->withHttpHeader(...$this->headers)
+            ->make();
+
+        return $client;
+    }
+
+    public function query(array $options): array
+    {
+        try {
+            $response = $this->client->chat()->create($options);
+
+            return $response->toArray();
+        } catch (Exception $e) {
+            throw new Exception('OpenAI API Query failed: ' . $e->getMessage());
+        }
     }
 }

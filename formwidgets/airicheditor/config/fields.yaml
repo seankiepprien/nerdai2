@@ -1,0 +1,18 @@
+fields:
+    aiPrompt:
+        label: Enter your prompt
+        type: textarea
+        size: large
+        placeholder: Type your prompt here...
+
+    aiResponse:
+        label: AI Response
+        type: textarea
+        size: large
+        readOnly: true
+        placeholder: The AI-generated HTML will appear here...
+
+    htmlPreview:
+        label: HTML Preview
+        type: partial
+        path: ~/plugins/nerd/nerdai/formwidgets/airicheditor/partials/_html_previe

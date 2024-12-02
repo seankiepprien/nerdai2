@@ -1,7 +1,11 @@
 <?php namespace Nerd\Nerdai;
 
 use Backend;
+use Event;
 use System\Classes\PluginBase;
+use Log;
+
+use Nerd\Nerdai\Models\NerdAiSettings;
 
 /**
  * nerdai Plugin Information File
@@ -40,6 +44,15 @@ class Plugin extends PluginBase
      */
     public function boot()
     {
+        \Backend\FormWidgets\RichEditor::extend(function($controller) {
+            $controller->addJs('/plugins/nerd/nerdai/formwidgets/aitextarea/assets/js/aitextarea.js');
+        });
+
+        Event::listen('backend.ajax.beforeRunHandler', function ($controller, $handler) {
+            if ($handler === 'onLoadPopup') {
+                return $controller->makePartial('$/nerd/nerdai/formwidgets/airicheditor/partials/_airicheditor.php');
+            }
+        });
 
     }
 
@@ -81,32 +94,52 @@ class Plugin extends PluginBase
      */
     public function registerNavigation()
     {
-        return []; // Remove this line to activate
-
         return [
             'nerdai' => [
                 'label'       => 'nerdai',
-                'url'         => Backend::url('nerd/nerdai/mycontroller'),
                 'icon'        => 'icon-leaf',
                 'permissions' => ['nerd.nerdai.*'],
                 'order'       => 500,
+                'sideMenu'    => [
+                    'logs' => [
+                        'label'       => 'Logs',
+                        'icon'        => 'icon-copy',
+                        'url'         => Backend::url('nerd/nerdai/logs'),
+                        'permissions' => ['nerd.nerdai.logs'],
+                    ],
+                    'settings' => [
+                        'label'       => 'Settings',
+                        'icon'        => 'icon-cogs',
+                        'url'         => Backend::url('system/settings/update/nerd/nerdai/settings'),
+                        'permissions' => ['nerd.nerdai.settings'],
+                    ]
+                ]
             ],
         ];
     }
 
     public function registerSettings()
     {
-        return [];
         return [
             'settings' => [
                 'label' => 'NerdAI Settings',
                 'description' => 'Settings for the NerdAI plugin',
                 'category' => 'NerdAI',
                 'icon' => ' icon-cogs',
-                'class' => \Nerd\Nerdai\Models\NerdAiSettings,
+                'class' => NerdAiSettings::class,
                 'order' => 500,
                 'keywords' => 'nerdai ai',
             ]
         ];
     }
+
+    public function registerFormWidgets()
+    {
+        return [
+            \Nerd\Nerdai\FormWidgets\AIText::class => 'aitext',
+            \Nerd\Nerdai\FormWidgets\AITextArea::class => 'aitextarea',
+            \Nerd\Nerdai\FormWidgets\AIRichEditor::class => 'airicheditor',
+        ];
+    }
+
 }
