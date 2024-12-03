@@ -131,7 +131,7 @@ class GPT4 implements AIModelInterface
             'messages' => [
                 [
                     'role' => 'user',
-                    'content' => "Analyze the following user prompt and score its quality on a scale from 1 to 10 based on clarity, specificity, and effectiveness. Respond with only the score as a single number:\n\n\"$prompt\"",
+                    'content' => "Analysez le texte suivant et évaluez-le sur une échelle de 1 à 10 selon trois critères : clarté, spécificité et efficacité. Répondez uniquement dans le format suivant :\n\n1. Clarté: X/10\n2. Spécificité: X/10\n3. Efficacité: X/10\n\nAucune autre information ou texte n'est nécessaire. Assurez-vous que la réponse suit exactement ce format.\n\nTexte : \"$prompt\"",
                 ]
             ],
             'max_tokens' => 50,
@@ -147,7 +147,7 @@ class GPT4 implements AIModelInterface
         return trim($response['choices'][0]['message']['content']);
     }
 
-    private static function scoreResponseRelevancy(string $prompt, string $response): int
+    private static function scoreResponseRelevancy(string $prompt, string $response): string
     {
         $apiKey = Settings::get('openai_api_key');
         $organization = Settings::get('openai_api_organization');
@@ -159,7 +159,7 @@ class GPT4 implements AIModelInterface
             'messages' => [
                 [
                     'role' => 'user',
-                    'content' => "Evaluate the relevance of the following AI response to the given user prompt. Score it on a scale from 1 to 10 based on how well it answers the prompt. Respond with only the score as a single number:\n\nPrompt: \"$prompt\"\n\nResponse: \"$response\"",
+                    'content' => "Évaluez la qualité de la réponse suivante de l'IA basé sur la requête pour une utilisation sur le web. Donnez une note sur une échelle de 1 à 10 pour chaque critère suivant : 1) Pertinence par rapport au texte de l'utilisateur, 2) Optimisation pour le référencement naturel (SEO), et 3) Qualité générale du contenu (structure, lisibilité, ton). Répondez uniquement dans le format suivant :\n\n1. Pertinence: X/10\n2. SEO: X/10\n3. Qualité générale: X/10\n\nRequête : \"$prompt\"\n\nRéponse : \"$response\"",
                 ]
             ],
             'max_tokens' => 50,
@@ -172,6 +172,6 @@ class GPT4 implements AIModelInterface
             throw new Exception('Response relevancy scoring failed: Invalid response format.');
         }
 
-        return (int)trim($response['choices'][0]['message']['content']);
+        return $response['choices'][0]['message']['content'];
     }
 }
