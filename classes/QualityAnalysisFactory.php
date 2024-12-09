@@ -2,6 +2,10 @@
 
 namespace Nerd\Nerdai\Classes;
 
+use Exception;
+use Nerd\Nerdai\Classes\sentimentanalysis\ContentQualityAnalysis;
+use Nerd\Nerdai\Classes\sentimentanalysis\PromptQualityAnalysis;
+
 class QualityAnalysisFactory
 {
     public static function createAnalyser(string $type): SentimentAnalysisInterface
@@ -11,10 +15,6 @@ class QualityAnalysisFactory
                 return new PromptQualityAnalysis();
             case 'content':
                 return new ContentQualityAnalysis();
-            case 'sentiment-score':
-                return new SentimentScoreQualityAnalysis();
-            case 'sentiment-category':
-                return new SentimentCategoryQualityAnalysis();
             default:
                 throw new Exception('Unknown quality analysis type: ' . $type);
         }

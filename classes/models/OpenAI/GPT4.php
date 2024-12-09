@@ -2,16 +2,22 @@
 
 namespace Nerd\Nerdai\Classes\Models\OpenAI;
 
+use Cache;
 use Exception;
 use Log;
 use Nerd\Nerdai\Classes\AIModelInterface;
 use Nerd\Nerdai\Classes\ClientFactory;
+use Nerd\Nerdai\Classes\QualityAnalysisFactory;
 use Nerd\Nerdai\Classes\TaskFactory;
 use Nerd\Nerdai\Classes\TaskInterface;
 use Nerd\NerdAI\Models\NerdAiSettings as Settings;
+use Throwable;
 
 class GPT4 implements AIModelInterface
 {
+    const MAX_CONCURRENT_REQUESTS = 5;
+    const CACHE_DURATION = 60;
+
     /**
      * Handles the entire chat completion process.
      *
@@ -34,34 +40,200 @@ class GPT4 implements AIModelInterface
      * @throws Exception
      */
     public static function query(
+        string|array $prompt,
+        string $task,
+        string $mode,
+    ): array {
+        // Handle batch processing of prompt is an array of IDs
+        if (is_array($prompt)) {
+            $batchId = uniqid('batch_', true);
+            return self::batchQuery($prompt, $task, $mode, $batchId);
+        }
+
+        return self::singleQuery($prompt, $task, $mode);
+    }
+
+    protected static function singleQuery(
         string $prompt,
         string $task,
         string $mode,
     ): array {
-        $taskMode = TaskFactory::resolve($task);
+        try {
+            $taskMode = TaskFactory::resolve($task);
+            $parameters = self::formatInput($prompt, $mode, $taskMode, $sentiment = '');
 
-        $parameters = self::formatInput($prompt, $mode, $taskMode , $sentiment = '');
+            $apiKey = Settings::get('openai_api_key');
+            $organization = Settings::get('openai_api_organization');
 
-        $apiKey = Settings::get('openai_api_key');
-        $organization = Settings::get('openai_api_organization');
+            if (!$apiKey) {
+                throw new Exception('OpenAI API key is not set.');
+            }
 
-        if (!$apiKey) {
-            throw new Exception('OpenAI API key is missing in settings.');
+            $client = ClientFactory::createOpenAIClient($apiKey, $organization, $parameters);
+            $rawResponse = $client->query($parameters);
+
+            $parameters['sentiment'] = self::scorePromptQuality($prompt);
+            $rawResponse['sentiment'] = self::scoreResponseRelevancy($prompt, $rawResponse['choices'][0]['message']['content']);
+
+            $model = Settings::get('openai_model');
+            $log = (new \Nerd\Nerdai\Models\Log)->logRecord($model, $task, $mode, $parameters, $rawResponse);
+            return self::formatResponse($rawResponse, $log->id);
+        } catch (Throwable $e) {
+            self::logError('Single query error', $e, ['prompt' => $prompt]);
+            throw $e;
+        }
+    }
+
+    protected static function batchQuery(
+        array $prompts,
+        string $task,
+        string $mode,
+        string $batchId
+    ): array {
+        try {
+            self::initializeBatchStatus($batchId, count($prompts));
+
+            $chunks = array_chunk($prompts, self::MAX_CONCURRENT_REQUESTS);
+            $results = [];
+            $logs = [];
+
+            foreach ($chunks as $chunk) {
+                // Process chunks in parallel
+                $chunkResults = self::processChunkInParallel($chunk, $task, $mode, $batchId);
+
+                // Merge results
+                $results = array_merge($results, $chunkResults['results']);
+                $logs = array_merge($logs, $chunkResults['logs']);
+
+                // Update Progress
+                self::updateBatchProgress($batchId, count($results));
+            }
+
+            // Finalize batch status
+            self::finalizeBatchStatus($batchId, $results);
+
+            return [
+                'results' => $results,
+                'logID' => $logs,
+                'batchId' => $batchId,
+                'status' => self::getBatchStatus($batchId)
+            ];
+        } catch (Throwable $e) {
+            self::logError('Batch query error', $e, ['batchId' => $batchId]);
+            self::updateBatchStatus($batchId, 'failed', $e->getMessage());
+            throw $e;
+        }
+    }
+
+    protected static function processChunkInParallel(array $chunk, string $task, string $mode, string $batchId)
+    {
+        $results = [];
+        $logs = [];
+        $promises = [];
+
+        // Process each prompt in the chunk concurrently
+        foreach ($chunk as $prompt) {
+            try {
+                $response = self::singleQuery($prompt, $task, $mode);
+                $results[$prompt] = $response['result'];
+                $logs[$prompt] = $response['logID'];
+
+                self::updateBatchItemStatus($batchId, $prompt, 'completed');
+            } catch (Throwable $e) {
+                self::logError('Chunk processing error', $e, [
+                    'prompt' => $prompt,
+                    'batchId' => $batchId
+                ]);
+
+                $results[$prompt] = ['error' => $e->getMessage()];
+                self::updateBatchItemStatus($batchId, $prompt, 'failed' . $e->getMessage());
+            }
         }
 
-        // Initialize OpenAI client via ClientFactory
-        $client = ClientFactory::createOpenAIClient($apiKey, $organization, $parameters);
+        return [
+            'results' => $results,
+            'logs' => $logs
+        ];
+    }
 
-        $rawResponse = $client->query($parameters);
+    protected static function initializeBatchStatus(string $batchId, int $total): void
+    {
+        $status = [
+            'id' => $batchId,
+            'total' => $total,
+            'completed' => 0,
+            'failed' => 0,
+            'status' => 'processing',
+            'items' => [],
+            'startTime' => microtime(true),
+            'endTime' => null,
+            'error' => null,
+        ];
 
-        $parameters['sentiment'] = self::scorePromptQuality($prompt);
-        $rawResponse['sentiment'] = self::scoreResponseRelevancy($prompt, $rawResponse['choices'][0]['message']['content']);
+        Cache::put("batch_status_{$batchId}", $status, self::CACHE_DURATION);
+    }
 
-        $model = Settings::get('openai_model');
+    protected static function updateBatchProgress(string $batchId, int $completed): void
+    {
+        $status = self::getBatchStatus($batchId);
+        if ($status) {
+            $status['completed'] = $completed;
+            Cache::put("batch_status_{$batchId}", $status, self::CACHE_DURATION);
+        }
+    }
 
-        $log = (new \Nerd\Nerdai\Models\Log)->logRecord($model, $task, $mode, $parameters, $rawResponse);
+    protected static function updateBatchItemStatus(string $batchId, string $itemId, string $status, string $error = null): void
+    {
+        $batchStatus = self::getBatchStatus($batchId);
+        if ($batchStatus) {
+            $batchStatus['items'][$itemId] = [
+                'status' => $status,
+                'error' => $error,
+                'timestap' => microtime(true)
+            ];
 
-        return self::formatResponse($rawResponse, $log->id);
+            if ($status === 'failed') {
+                $batchStatus['failed']++;
+            }
+
+            Cache::put("batch_status_{$batchId}", $batchStatus, self::CACHE_DURATION);
+        }
+    }
+
+    protected static function finalizeBatchStatus(string $batchId, array $results): void
+    {
+        $status = self::getBatchStatus($batchId);
+        if ($status) {
+            $status['status'] = 'completed';
+            $status['endTime'] = microtime(true);
+            $status['duration'] = $status['entTime'] - $status['startTime'];
+            Cache::put("batch_status_{$batchId}", $status, self::CACHE_DURATION);
+        }
+    }
+
+    public static function getBatchStatus(string $batchId): ?array
+    {
+        return Cache::get("batch_status_{$batchId}");
+    }
+
+    protected static function updateBatchStatus(string $batchId, string $status, string $error = null): void
+    {
+        $batchStatus = self::getBatchStatus($batchId);
+        if ($batchStatus) {
+            $batchStatus['status'] = $status;
+            $batchStatus['error'] = $error;
+            $batchStatus['endTime'] = microtime(true);
+            Cache::put("batch_status_{$batchId}", $batchStatus, self::CACHE_DURATION);
+        }
+    }
+
+    protected static function logError(string $message, Throwable $exception, array $context = []): void
+    {
+        Log::error($message, [
+            'error' => $exception->getMessage(),
+            'trace' => $exception->getTraceAsString(),
+            'context' => $context
+        ]);
     }
 
     /**

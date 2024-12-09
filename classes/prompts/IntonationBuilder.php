@@ -1,6 +1,6 @@
 <?php
 
-namespace Nerd\Nerdai\Classes\Prompts;
+namespace Nerd\Nerdai\Classes\prompts;
 
 class IntonationBuilder
 {

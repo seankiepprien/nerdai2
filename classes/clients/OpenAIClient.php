@@ -1,9 +1,7 @@
 <?php namespace Nerd\Nerdai\Classes\Clients;
 
 use Exception;
-use Log;
 use Nerd\Nerdai\Classes\ClientInterface;
-use Nerd\Nerdai\Classes\Prompts\PromptBuilder;
 use OpenAI;
 
 /**

@@ -1,67 +1,49 @@
-<?= Form::open(['data-request' => 'onGenerateAIResponse']) ?>
-
-<div class="modal-header">
-    <h4 class="modal-title">Generate AI Text</h4>
-    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-</div>
-
-<div class="modal-body">
-    <div class="form-group">
-        <label for="aiPrompt">Enter your prompt</label>
-        <textarea
-            id="aiPrompt"
-            name="aiPrompt"
-            class="form-control"
-            rows="3"
-            placeholder="Type your prompt here..."></textarea>
+<!-- Rich Editor -->
+<?php if ($this->previewMode): ?>
+    <div class="form-control"><?= $value ?></div>
+<?php else: ?>
+    <div
+        id="<?= $this->getId() ?>"
+        class="field-richeditor size-<?= $size ?> <?= $stretch?'layout-relative stretch':'' ?> <?= $legacyMode ? '' : 'vue-mode' ?>"
+        <?php if ($fullPage): ?>data-fullpage="true"<?php endif ?>
+        <?php if ($useLineBreaks): ?>data-use-line-breaks="true"<?php endif ?>
+        <?php if ($readOnly): ?>data-read-only="true"<?php endif ?>
+        <?php if ($useMediaManager): ?>data-use-media-manager="true"<?php endif ?>
+        <?php if ($editorLang): ?>data-editor-lang="<?= $editorLang ?>"<?php endif ?>
+        <?php if ($toolbarButtons): ?>data-toolbar-buttons="<?= implode(',', $toolbarButtons) ?>"
+    <?php elseif ($globalToolbarButtons): ?>data-toolbar-buttons="<?= str_replace(" ", "", $globalToolbarButtons) ?>"<?php endif ?>
+        <?php if ($allowEmptyTags): ?>data-allow-empty-tags="<?= e($allowEmptyTags) ?>"<?php endif ?>
+        <?php if ($allowTags): ?>data-allow-tags="<?= e($allowTags) ?>"<?php endif ?>
+        <?php if ($allowAttrs): ?>data-allow-attrs="<?= e($allowAttrs) ?>"<?php endif ?>
+        <?php if ($noWrapTags): ?>data-no-wrap-tags="<?= e($noWrapTags) ?>"<?php endif ?>
+        <?php if ($removeTags): ?>data-remove-tags="<?= e($removeTags) ?>"<?php endif ?>
+        <?php if ($lineBreakerTags): ?>data-line-breaker-tags="<?= e($lineBreakerTags) ?>"<?php endif ?>
+        <?php if (isset($imageStyles)): ?>data-image-styles="<?= e(json_encode($imageStyles)) ?>"<?php endif ?>
+        <?php if (isset($linkStyles)): ?>data-link-styles="<?= e(json_encode($linkStyles)) ?>"<?php endif ?>
+        <?php if (isset($paragraphStyles)): ?>data-paragraph-styles="<?= e(json_encode($paragraphStyles)) ?>"<?php endif ?>
+        <?php if (isset($paragraphFormats)): ?>data-paragraph-format="<?= e(json_encode($paragraphFormats)) ?>"<?php endif ?>
+        <?php if (isset($tableStyles)): ?>data-table-styles="<?= e(json_encode($tableStyles)) ?>"<?php endif ?>
+        <?php if (isset($tableCellStyles)): ?>data-table-cell-styles="<?= e(json_encode($tableCellStyles)) ?>"<?php endif ?>
+        <?php if (isset($editorOptions)): ?>data-editor-options="<?= e(json_encode($editorOptions)) ?>"<?php endif ?>
+        <?php if ($showMargins): ?>data-show-margins="true"<?php endif ?>
+        <?php if ($externalToolbarAppState): ?>data-external-toolbar-app-state="<?= e($externalToolbarAppState)?>"<?php endif ?>
+        data-lang-fullscreen="<?= e(trans('backend::lang.form.toggle_full_screen')) ?>"
+        data-legacy-mode="<?= $legacyMode ? 1 : 0 ?>"
+        data-ace-vendor-path="<?= Url::asset('/modules/backend/formwidgets/codeeditor/assets/vendor/ace') ?>"
+        data-control="richeditor">
+        <?php if (!$legacyMode): ?><div class="editor-write layout-cell"><?php endif ?>
+            <textarea
+                data-richeditor-textarea
+                placeholder="<?= e(__($field->placeholder)) ?>"
+                name="<?= $name ?>"
+                id="<?= $this->getId('textarea') ?>"
+                style="display: none"
+            ><?= e($value) ?></textarea>
+            <div class="height-indicator"></div>
+            <?php if (!$legacyMode): ?></div><?php endif ?>
     </div>
 
-    <div class="form-group mt-3">
-        <label for="aiResponse">AI Response</label>
-        <textarea
-            id="aiResponse"
-            name="aiResponse"
-            class="form-control"
-            rows="5"
-            readonly
-            placeholder="The AI-generated HTML will appear here..."></textarea>
-    </div>
-
-    <div class="form-group mt-3">
-        <label for="preview">HTML Preview</label>
-        <iframe
-            id="AIHtmlPreview"
-            class="form-control"
-            style="width: 100%; height: 200px; border: 1px solid #ddd;"
-        ></iframe>
-    </div>
-</div>
-
-<div class="modal-footer">
-    <button
-        type="button"
-        data-request="onGenerateAIResponse"
-        data-request-success="updatePreview(data.result);"
-        data-attach-loading
-        class="btn btn-primary">
-        Generate
-    </button>
-
-    <button
-        type="button"
-        data-request="onAddAIToEditor"
-        data-request-complete="$('.modal').trigger('close.oc.popup');"
-        data-attach-loading
-        class="btn btn-success">
-        Add to Editor
-    </button>
-
-    <button
-        type="button"
-        class="btn btn-default"
-        data-dismiss="popup">
-        Cancel
-    </button>
-</div>
-
-<?= Form::close() ?>
+    <?php if ($isAjax): ?>
+        <?= $this->controller->outputVueComponentTemplates(); ?>
+    <?php endif ?>
+<?php endif ?>

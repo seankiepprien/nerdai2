@@ -55,125 +55,64 @@ class AITextArea extends FormWidgetBase
         return $value;
     }
 
+    protected function processAIRequest(string $prompt, string $task): array
+    {
+        try {
+            $response = GPT4::query(
+                $prompt,
+                $task,
+                'text-generation'
+            );
+
+            $this->prepareVars();
+            $this->vars['value'] = $response['result'];
+
+            return [
+                '#'.$this->getId() => $this->makePartial('aitextarea'),
+                'success' => true
+            ];
+        } catch (\Exception $e) {
+            Log::error('AI Text Area Error', [
+                'task' => $task,
+                'prompt' => $prompt,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return [
+                'error' => $e->getMessage(),
+                'success' => false
+            ];
+        }
+    }
+
     public function onElaborate()
     {
         $prompt = post($this->getFieldName());
-
-        $response = GPT4::query(
-            $prompt,
-            'elaborate',
-            'text-generation',
-        );
-
-        $this->prepareVars();
-        $this->vars['value'] = $response['result'];
-
-        return ['#'.$this->getId() => $this->makePartial('aitextarea')];
+        return $this->processAIRequest($prompt, 'elaborate');
     }
 
     public function onRewrite()
     {
         $prompt = post($this->getFieldName());
-
-        $response = GPT4::query(
-            $prompt,
-            'rewrite',
-            'text-generation'
-        );
-
-        $this->prepareVars();
-        $this->vars['value'] = $response['result'];
-
-        return ['#'.$this->getId() => $this->makePartial('aitextarea')];
+        return $this->processAIRequest($prompt, 'rewrite');
     }
 
     public function onComplete()
     {
         $prompt = post($this->getFieldName());
-
-        $response = GPT4::query(
-            $prompt,
-            'complete',
-            'text-generation'
-        );
-
-        $this->prepareVars();
-        $this->vars['value'] = $response['result'];
-
-        return ['#'.$this->getId() => $this->makePartial('aitextarea')];
+        return $this->processAIRequest($prompt, 'complete');
     }
 
     public function onSummarize()
     {
         $prompt = post($this->getFieldName());
-
-        $response = GPT4::query(
-            $prompt,
-            'summarize',
-            'text-generation'
-        );
-
-        $this->prepareVars();
-        $this->vars['value'] = $response['result'];
-
-        return ['#'.$this->getId() => $this->makePartial('aitextarea')];
+        return $this->processAIRequest($prompt, 'summarize');
     }
 
     public function onPrompt()
     {
         $prompt = post($this->getFieldName());
-
-        $response = GPT4::query(
-            $prompt,
-            'prompt',
-            'text-generation'
-        );
-
-        $this->prepareVars();
-        $this->vars['value'] = $response['result'];
-
-        return ['#'.$this->getId() => $this->makePartial('aitextarea')];
-    }
-
-    public function onGenerateAIResponse()
-    {
-        $prompt = post('aiPrompt');
-
-        if (!$prompt) {
-            throw new \ValidationException(['aiPrompt' => 'Please enter a prompt.']);
-        }
-
-        $response = GPT4::query(
-            $prompt,
-            'html-code',
-            'text-generation'
-        );
-
-        Session::put('logID', $response['logID']);
-
-        return ['result' => $response['result']];
-    }
-
-    public function onAddAIToEditor()
-    {
-        $aiResponse = post('aiResponse');
-
-        if (!$aiResponse) {
-            throw new \ValidationException(['aiResponse' => 'AI is not responding, please try again.']);
-        }
-
-        $LogID = Session::get('logID');
-
-        $log = AILog::find($LogID);
-
-        if ($log) {
-            $log->taken_prompt = true;
-            $log->save();
-        }
-
-        return [
-            'result' => $aiResponse,
-            'context' => 'onAddAIToEditor'
-        ];
+        return $this->processAIRequest($prompt, 'prompt');
     }
 }

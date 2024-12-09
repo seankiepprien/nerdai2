@@ -27,6 +27,8 @@ class TaskFactory
                 return new \Nerd\Nerdai\Classes\tasks\SummarizeTask();
             case 'html-code':
                 return new \Nerd\Nerdai\Classes\tasks\HtmlCodeTask();
+            case 'vehicle-description':
+                return new \Nerd\Nerdai\Classes\tasks\VehicleDescriptionTask();
             default:
                 throw new Exception('No task found for mode: ' . $mode);
         }

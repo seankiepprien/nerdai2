@@ -115,6 +115,6 @@ tabs:
             tab: Testing
         test_richeditor:
             label: Test Rich Editor
-            type: richeditor
+            type: airicheditor
             span: full
             tab: Testing

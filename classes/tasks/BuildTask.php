@@ -2,7 +2,7 @@
 
 namespace Nerd\Nerdai\Classes\tasks;
 
-use Nerd\Nerdai\Classes\Prompts\PromptBuilder;
+use Nerd\Nerdai\Classes\prompts\PromptBuilder;
 use Nerd\Nerdai\Classes\TaskInterface;
 
 abstract class BuildTask implements TaskInterface

@@ -50,7 +50,7 @@ class Plugin extends PluginBase
 
         Event::listen('backend.ajax.beforeRunHandler', function ($controller, $handler) {
             if ($handler === 'onLoadPopup') {
-                return $controller->makePartial('$/nerd/nerdai/formwidgets/airicheditor/partials/_airicheditor.php');
+                return $controller->makePartial('$/nerd/nerdai/formwidgets/airicheditor/partials/_popup.php');
             }
         });
 
