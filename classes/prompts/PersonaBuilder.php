@@ -12,6 +12,6 @@ class PersonaBuilder
      */
     public function buildPersonaPrompt($persona): string
     {
-        return $persona ? "This is your persona and it defines your characteristic: " . $persona . ". " : "";
+        return $persona ? "\n ### PERSONA: ### \n This is your persona and it defines your characteristic: " . $persona . ". \n" : "";
     }
 }

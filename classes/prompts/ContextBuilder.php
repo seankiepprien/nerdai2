@@ -12,6 +12,6 @@ class ContextBuilder
      */
     public function buildContextPrompt($context): string
     {
-        return $context ? "This is the context you should be aware of but you are not required to repeat it in your response: " . $context . ". " : "";
+        return $context ? "### CONTEXT: ### \n This is the context you should be aware of but you are not required to repeat it in your response: " . $context . ". " : "";
     }
 }

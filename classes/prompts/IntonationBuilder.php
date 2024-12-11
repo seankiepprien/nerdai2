@@ -12,6 +12,6 @@ class IntonationBuilder
      */
     public function buildIntonationPrompt($intonation): string
     {
-        return $intonation ? sprintf("Your prompt should be in '%s' intonation. ", $intonation) : "";
+        return $intonation ? sprintf("### INTONATION: ### \nYour prompt should be in '%s' intonation. ", $intonation) : "";
     }
 }

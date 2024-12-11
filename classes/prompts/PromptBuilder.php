@@ -11,6 +11,10 @@ class PromptBuilder
     protected $includeContext = true;
     protected $includeIntonation = true;
     protected $includeLanguage = true;
+    protected $includeDealerInfo = true;
+    protected $includeDealerAdditionalContext = true;
+    protected $includeAdditionalInstructions = true;
+    protected $includeVehicleInfo = true;
 
     public function addPrompt($text): self
     {
@@ -42,17 +46,45 @@ class PromptBuilder
         return $this;
     }
 
-    public function toPrompt($value, $mode): string
+    public function withoutDealerInfo(): self
+    {
+        $this->includeDealerInfo = false;
+        return $this;
+    }
+
+    public function withoutDealerAdditionalContext(): self
+    {
+        $this->includeDealerAdditionalContext = false;
+        return $this;
+    }
+
+    public function withoutAdditionalInstructions(): self
+    {
+        $this->includeAdditionalInstructions = false;
+        return $this;
+    }
+
+    public function withoutVehicleInfo(): self
+    {
+        $this->includeVehicleInfo = false;
+        return $this;
+    }
+
+    public function toPrompt($value, $mode, $dealerInfo, $vehicleInfo): string
     {
         $persona = Settings::get('persona');
         $context = Settings::get('context');
         $intonation = Settings::get('intonation');
         $language = Settings::get('language');
+        $dealerContext = $dealerInfo?->ai_additional_context ?? null;
 
         $personaBuilder = new PersonaBuilder();
         $contextBuilder = new ContextBuilder();
         $intonationBuilder = new IntonationBuilder();
         $languageBuilder = new LanguageBuilder();
+        $dealerInfoBuilder = new DealerInformationBuilder();
+        $dealerContextBuilder = new DealerContextBuilder();
+        $vehicleInfoBuilder = new VehicleInfoBuilder();
 
         if ($this->includePersona) {
             $this->prompt .= $personaBuilder->buildPersonaPrompt($persona);
@@ -70,6 +102,18 @@ class PromptBuilder
             $this->prompt .= $languageBuilder->buildLanguagePrompt($language);
         }
 
+        if ($this->includeDealerInfo) {
+            $this->prompt .= $dealerInfoBuilder->buildDealerInformationPrompt($dealerInfo);
+        }
+
+        if ($this->includeDealerAdditionalContext && $dealerContext !== null) {
+            $this->prompt .= $dealerContextBuilder->buildDealerContextPrompt($dealerContext);
+        }
+
+        if ($this->includeVehicleInfo && $vehicleInfo !== null) {
+            $this->prompt .= $vehicleInfoBuilder->buildVehicleInfoPrompt($vehicleInfo);
+        }
+
         switch ($mode) {
             case 'text-rewrite':
                 return $this->prompt . 'Without repeating or explaining your persona, please rephrase the following sentence while keeping the word count approximately the same: ' . $value;
@@ -84,16 +128,7 @@ class PromptBuilder
             case 'html-code':
                 return $this->prompt . 'Without repeating or explaining your persona, without the <html>, <head>, <body> sections or any unnecessary tags, please generate SEO and accessibility friendly HTML code for the following: ' . $value;
             case 'vehicle-description':
-                return $this->prompt . "Without repeating or explaining your persona, without the <html>, <head>, <body> sections or any unnecessary tags, please generate SEO and accessibility friendly HTML code Produce a professional and engaging description for a vehicle based on the dataset below. The description must be optimized for the web and contain every specification about the vehicle:
-            - A captivating introduction presenting the vehicle and its unique qualities. A clear indication of the vehicle's status.
-            - Be careful, the price is formatted without the comma before the last two zeros.
-            - Specific user benefits, including performance, technological features and comfort.
-            - A mention of price and promotions, followed by a call to action to visit the dealership.
-            - A mention of the rigorous inspection carried out on each vehicle at the dealership.
-
-            Focus on the following strengths: powertrain, interior comfort, safety features and technology. Be sure to include keywords like “Acura MDX 2020” to optimize content for search engines, and finish the description with a short but engaging description of the dealership in context.
-
-            using these specifications: " . $value;
+                return $this->prompt . $value;
             default:
                 return $this->prompt . $value;
         }

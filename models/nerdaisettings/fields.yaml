@@ -37,9 +37,8 @@ tabs:
             type: dropdown
             span: auto
             options:
-                gpt-3.5-turbo-instruct: GPT 3.5 Turbo Instruct
-                gpt-4o-mini: GPT 4 Mini
-                gpt-4-turbo: GPT 4 Turbo
+                gpt-4o-mini: GPT 4o Mini
+                gpt-4o: GPT 4o
             tab: Configurations
             trigger:
                 field: enable_open_ai

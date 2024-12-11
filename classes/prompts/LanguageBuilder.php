@@ -12,6 +12,6 @@ class LanguageBuilder
      */
     public function buildLanguagePrompt($language): string
     {
-        return $language ? sprintf("When responding, your reply should be in '%s' language. ", $language) : "";
+        return $language ? sprintf("### LANGUAGE: ### \n When responding, your reply should be in '%s' language. ", $language . "\n") : "";
     }
 }

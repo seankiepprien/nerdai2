@@ -4,7 +4,7 @@ use Backend\Classes\FormWidgetBase;
 use Backend\Facades\BackendAuth;
 use Backend\FormWidgets\RichEditor;
 use Backend\Models\EditorSetting;
-use Nerd\Nerdai\Classes\Models\OpenAI\GPT4;
+use Nerd\Nerdai\Classes\Models\OpenAI\gpt4;
 use Nerd\Nerdai\Models\Log as AILog;
 use Request;
 use Session;
@@ -43,7 +43,7 @@ class AIRichEditor extends RichEditor
             throw new \ValidationException(['aiPrompt' => 'Please enter a prompt.']);
         }
 
-        $response = GPT4::query(
+        $response = gpt4::query(
             $prompt,
             'html-code',
             'text-generation'

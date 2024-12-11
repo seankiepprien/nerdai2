@@ -2,16 +2,7 @@
 
 use Backend\Classes\FormWidgetBase;
 use Log;
-use Nerd\Nerdai\Models\Log as AILog;
-use Nerd\Nerdai\Classes\Clients\OpenAIClient;
-use Nerd\Nerdai\Classes\Models\OpenAI\GPT4;
-use Nerd\Nerdai\Classes\tasks\CompleteTask;
-use Nerd\Nerdai\Classes\tasks\ExpandTask;
-use Nerd\Nerdai\Classes\tasks\PromptTask;
-use Nerd\Nerdai\Classes\tasks\RewriteTask;
-use Nerd\Nerdai\Classes\tasks\SummarizeTask;
-use Nerd\NerdAI\Models\NerdAiSettings as Settings;
-use Session;
+use Nerd\Nerdai\Classes\Models\OpenAI\gpt4;
 
 /**
  * AITextArea Form Widget
@@ -58,10 +49,11 @@ class AITextArea extends FormWidgetBase
     protected function processAIRequest(string $prompt, string $task): array
     {
         try {
-            $response = GPT4::query(
+            $response = gpt4::query(
                 $prompt,
                 $task,
-                'text-generation'
+                'text-generation',
+                null
             );
 
             $this->prepareVars();
@@ -72,7 +64,7 @@ class AITextArea extends FormWidgetBase
                 'success' => true
             ];
         } catch (\Exception $e) {
-            Log::error('AI Text Area Error', [
+            Log::error($e->getMessage(), [
                 'task' => $task,
                 'prompt' => $prompt,
                 'error' => $e->getMessage(),

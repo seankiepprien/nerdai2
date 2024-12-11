@@ -5,15 +5,16 @@ namespace Nerd\Nerdai\Classes\Models\OpenAI;
 use Cache;
 use Exception;
 use Log;
+use Nerd\Inventory\Models\Dealer;
+use Nerd\Inventory\Models\Vehicle;
 use Nerd\Nerdai\Classes\AIModelInterface;
 use Nerd\Nerdai\Classes\ClientFactory;
-use Nerd\Nerdai\Classes\QualityAnalysisFactory;
 use Nerd\Nerdai\Classes\TaskFactory;
 use Nerd\Nerdai\Classes\TaskInterface;
 use Nerd\NerdAI\Models\NerdAiSettings as Settings;
 use Throwable;
 
-class GPT4 implements AIModelInterface
+class gpt4 implements AIModelInterface
 {
     const MAX_CONCURRENT_REQUESTS = 5;
     const CACHE_DURATION = 60;
@@ -38,11 +39,13 @@ class GPT4 implements AIModelInterface
      * @param string $mode The mode to use for formatting the prompt.
      * @return array The final formatted response.
      * @throws Exception
+     * @throws Throwable
      */
     public static function query(
         string|array $prompt,
         string $task,
         string $mode,
+        Vehicle|null $vehicle
     ): array {
         // Handle batch processing of prompt is an array of IDs
         if (is_array($prompt)) {
@@ -50,17 +53,19 @@ class GPT4 implements AIModelInterface
             return self::batchQuery($prompt, $task, $mode, $batchId);
         }
 
-        return self::singleQuery($prompt, $task, $mode);
+        return self::singleQuery($prompt, $task, $mode, $vehicle);
     }
 
     protected static function singleQuery(
         string $prompt,
         string $task,
         string $mode,
+        Vehicle|null $vehicle
     ): array {
         try {
             $taskMode = TaskFactory::resolve($task);
-            $parameters = self::formatInput($prompt, $mode, $taskMode, $sentiment = '');
+
+            $parameters = self::formatInput($prompt, $mode, $taskMode, $vehicle);
 
             $apiKey = Settings::get('openai_api_key');
             $organization = Settings::get('openai_api_organization');
@@ -241,6 +246,8 @@ class GPT4 implements AIModelInterface
      *
      * @param string $prompt The prompt to send to the OpenAI API.
      * @param TaskInterface $task The task to use for formatting the prompt.
+     * @param string | null $sentiment The sentiment analysis to give the AI for self-enhancing capability.
+     * @param array $parameters An optional argument to add any custom parameters to the Input.
      * @return array Formatted options for the OpenAI API.
      * @throws Exception
      */
@@ -248,17 +255,27 @@ class GPT4 implements AIModelInterface
         string $prompt,
         string $mode,
         TaskInterface $task,
-        string $sentiment = null,
+        Vehicle|null $vehicle,
         array $parameters = []
     ): array {
+        if ($vehicle) {
+            $dealerId = $vehicle->dealer_id;
+            $dealerInfo = Dealer::where('id', $dealerId)->first();
+        } else {
+            $dealerInfo = Dealer::where('is_default' , 1)->first();
+        }
         switch ($mode) {
             case 'text-generation':
+                $options = [
+                    'dealerInfo' => $dealerInfo,
+                    'vehicleInfo' => $vehicle
+                ];
                 $parameters = [
                     'model' => Settings::get('openai_model'),
                     'messages' => [
                         [
                             'role' => 'user',
-                            'content' => $task->getResponse($prompt),
+                            'content' => $task->getResponse($prompt, $options),
                         ]
                     ],
                     'max_tokens' => Settings::get('openai_api_max_token'),

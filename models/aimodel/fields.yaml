@@ -20,9 +20,8 @@ fields:
         type: dropdown
         span: right
         options:
-            gpt-3.5-turbo-instruct: GPT 3.5 Turbo Instruct
-            gpt-4o-mini: GPT 4 Mini
-            gpt-4-turbo: GPT 4 Turbo
+            gpt-4o-mini: GPT 4o Mini
+            gpt-4o: GPT 4o
         comment: Set the AI Model to use.
         trigger:
             field: model_api

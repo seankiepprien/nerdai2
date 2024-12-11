@@ -11,14 +11,14 @@ class VehicleDescriptionTask extends BuildTask
         parent::__construct('vehicle-description');
     }
 
-    public function makePrompt(string|array $input): string
+    public function makePrompt(string|array $input, $options): string
     {
         if (is_array($input)) {
             $vehicle = Vehicle::find($input[0]); // We only handle one vehicle at a time
             if (!$vehicle) {
                 throw new \Exception("Vehicle not found with ID: {$input[0]}");
             }
-            return parent::makePrompt($this->formatVehicleData($vehicle->toArray()));
+            return parent::makePrompt($this->formatVehicleData($vehicle->toArray()), $options);
         }
 
         if (is_string($input) && is_numeric($input)) {
@@ -26,10 +26,10 @@ class VehicleDescriptionTask extends BuildTask
             if (!$vehicle) {
                 throw new \Exception("Vehicle not found with ID: {$input}");
             }
-            return parent::makePrompt($this->formatVehicleData($vehicle->toArray()));
+            return parent::makePrompt($this->formatVehicleData($vehicle->toArray()), $options);
         }
 
-        return parent::makePrompt($input);
+        return parent::makePrompt($input, $options);
     }
 
     public function batchProcess(array $vehicleIds): array
