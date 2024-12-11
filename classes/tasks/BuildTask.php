@@ -30,7 +30,6 @@ abstract class BuildTask implements TaskInterface
 
     public function getResponse(string|array $input, array $options): string
     {
-        Log::notice('option: ' . $options['dealerInfo']);
         $this->makePrompt($input, $options);
 
         return "nerd.nerdai::lang.build.reach" . $this->mode . '####' . $this->prompt;
