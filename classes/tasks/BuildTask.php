@@ -28,7 +28,7 @@ abstract class BuildTask implements TaskInterface
         return $this->prompt;
     }
 
-    public function getResponse(string|array $input, array $options): string
+    public function getResponse(string|array $input, array $options): array|string
     {
         $this->makePrompt($input, $options);
 

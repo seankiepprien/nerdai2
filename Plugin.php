@@ -52,8 +52,10 @@ class Plugin extends PluginBase
             if ($handler === 'onLoadPopup') {
                 return $controller->makePartial('$/nerd/nerdai/formwidgets/airicheditor/partials/_popup.php');
             }
+            if ($handler == 'onAnalyzeImage') {
+                return \Nerd\Nerdai\Models\NerdAiSettings::onAnalyzeImage();
+            }
         });
-
     }
 
     /**
@@ -139,6 +141,7 @@ class Plugin extends PluginBase
             \Nerd\Nerdai\FormWidgets\AIText::class => 'aitext',
             \Nerd\Nerdai\FormWidgets\AITextArea::class => 'aitextarea',
             \Nerd\Nerdai\FormWidgets\AIRichEditor::class => 'airicheditor',
+            \Nerd\Nerdai\FormWidgets\AIFileUpload::class => 'aifileupload'
         ];
     }
 

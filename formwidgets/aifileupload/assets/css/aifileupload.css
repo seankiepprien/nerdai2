@@ -1,0 +1,78 @@
+.nerdai-fileupload-container {
+    margin-bottom: 20px;
+}
+
+.nerdai-fileupload-dropzone {
+    border: 2px dashed #bbb;
+    border-radius: 5px;
+    padding: 25px;
+    text-align: center;
+    background: #f8f9fa;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.nerdai-fileupload-dropzone:hover {
+    border-color: #6a6cf7;
+    background: #f0f1ff;
+}
+
+.nerdai-fileupload-dropzone.drag-over {
+    border-color: #6a6cf7;
+    background: #f0f1ff;
+}
+
+.nerdai-fileupload-dropzone .upload-ui {
+    color: #666;
+}
+
+.nerdai-fileupload-dropzone .upload-ui i {
+    font-size: 48px;
+    margin-bottom: 10px;
+    color: #bbb;
+}
+
+.nerdai-fileupload-dropzone .upload-ui p {
+    margin: 0;
+    font-size: 16px;
+}
+
+.nerdai-fileupload-dropzone .upload-ui small {
+    color: #999;
+}
+
+.nerdai-fileupload-preview {
+    margin-top: 20px;
+    padding: 15px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+}
+
+.nerdai-fileupload-preview img {
+    max-width: 100%;
+    max-height: 300px;
+    margin-bottom: 15px;
+}
+
+.nerdai-fileupload-preview .analysis-results {
+    border-top: 1px solid #eee;
+    padding-top: 15px;
+}
+
+.nerdai-fileupload-preview .analysis-results h4 {
+    margin-top: 0;
+    color: #333;
+}
+
+.nerdai-fileupload-error {
+    margin-top: 10px;
+    padding: 10px;
+    background: #fff0f0;
+    border: 1px solid #ffcdd2;
+    border-radius: 4px;
+    color: #d32f2f;
+}
+
+.hidden {
+    display: none;
+}

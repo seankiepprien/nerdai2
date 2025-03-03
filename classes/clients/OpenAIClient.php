@@ -94,4 +94,50 @@ class OpenAIClient implements ClientInterface
             throw new Exception('OpenAI API Query failed: ' . $e->getMessage());
         }
     }
+
+    /**
+     * Process an image with GPT-4 Vision
+     *
+     * @param array $messages Array containing the message structure with text and image
+     * @param array $options Additional options for the API call
+     * @return array Response from the API
+     * @throws Exception
+     */
+    public function vision(array $messages, array $options = []): array
+    {
+        $parameters = array_merge([
+            'model' => 'gpt-4-vision-preview',
+            'messages' => $messages,
+            'max_tokens' => 500,
+        ], $options);
+
+        try {
+            $response = $this->client->chat()->create($parameters);
+            return $response->toArray();
+        } catch (Exception $e) {
+            throw new Exception('Vision API Query Failed: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Convert an uploaded file to a base64 data URL
+     *
+     * @param string $filePath Path to the image file
+     * @return string Base64 encoded data URL
+     * @throws Exception
+     */
+    public function imageToDataUrl(string $filePath): string
+    {
+        if (!file_exists($filePath)) {
+            throw new Exception('Image file not found: ' . $filePath);
+        }
+
+        $type = mime_content_type($filePath);
+        if (!str_starts_with($type, 'image/')) {
+            throw new Exception('File is not an image: ' . $type);
+        }
+
+        $data = base64_encode(file_get_contents($filePath));
+        return "data:$type;base64,$data";
+    }
 }

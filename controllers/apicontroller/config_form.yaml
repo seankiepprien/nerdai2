@@ -1,0 +1,31 @@
+# ===================================
+#  Form Behavior Config
+# ===================================
+
+# Record name
+name: Api Controller
+
+# Model Form Field configuration
+form: $/nerd/nerdai/models/apicontroller/fields.yaml
+
+# Model Class name
+modelClass: Nerd\Nerdai\Models\ApiController
+
+# Default redirect location
+defaultRedirect: nerd/nerdai/apicontroller
+
+# Create page
+create:
+    title: backend::lang.form.create_title
+    redirect: nerd/nerdai/apicontroller/update/:id
+    redirectClose: nerd/nerdai/apicontroller
+
+# Update page
+update:
+    title: backend::lang.form.update_title
+    redirect: nerd/nerdai/apicontroller
+    redirectClose: nerd/nerdai/apicontroller
+
+# Preview page
+preview:
+    title: backend::lang.form.preview_title

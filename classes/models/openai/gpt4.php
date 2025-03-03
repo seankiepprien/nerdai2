@@ -139,7 +139,7 @@ class gpt4 implements AIModelInterface
         // Process each prompt in the chunk concurrently
         foreach ($chunk as $prompt) {
             try {
-                $response = self::singleQuery($prompt, $task, $mode);
+                $response = self::singleQuery($prompt, $task, $mode, null);
                 $results[$prompt] = $response['result'];
                 $logs[$prompt] = $response['logID'];
 
@@ -211,7 +211,7 @@ class gpt4 implements AIModelInterface
         if ($status) {
             $status['status'] = 'completed';
             $status['endTime'] = microtime(true);
-            $status['duration'] = $status['entTime'] - $status['startTime'];
+            $status['duration'] = $status['endTime'] - $status['startTime'];
             Cache::put("batch_status_{$batchId}", $status, self::CACHE_DURATION);
         }
     }
@@ -280,6 +280,30 @@ class gpt4 implements AIModelInterface
                     ],
                     'max_tokens' => Settings::get('openai_api_max_token'),
                     'temperature' => 0.7,
+                ];
+                break;
+            case 'vision-analysis':
+                $parameters = [
+                    'model' => 'gpt-4o',
+                    'messages' => [
+                        [
+                            'role' => 'user',
+                            'content' => [
+                                [
+                                    'type' => 'text',
+                                    'text' => is_array($prompt) ? ($prompt['prompt'] ?? 'Analyze this image.') : $prompt
+                                ],
+                                [
+                                    'type' => 'image_url',
+                                    'image_url' => [
+                                        'url' => is_array($prompt) ? $prompt['image'] : $prompt,
+                                        'detail' => 'auto'
+                                    ]
+                                ]
+                            ]
+                        ]
+                    ],
+                    'max_tokens' => Settings::get('openai_api_max_token', 300)
                 ];
                 break;
             default:
