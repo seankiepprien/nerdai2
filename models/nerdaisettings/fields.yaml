@@ -117,3 +117,8 @@ tabs:
             type: airicheditor
             span: full
             tab: Testing
+        test_chat:
+            label: Test Chat
+            type: chatwidget
+            span: full
+            tab: Testing

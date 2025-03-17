@@ -141,7 +141,8 @@ class Plugin extends PluginBase
             \Nerd\Nerdai\FormWidgets\AIText::class => 'aitext',
             \Nerd\Nerdai\FormWidgets\AITextArea::class => 'aitextarea',
             \Nerd\Nerdai\FormWidgets\AIRichEditor::class => 'airicheditor',
-            \Nerd\Nerdai\FormWidgets\AIFileUpload::class => 'aifileupload'
+            \Nerd\Nerdai\FormWidgets\AIFileUpload::class => 'aifileupload',
+            \Nerd\Nerdai\FormWidgets\ChatWidget::class => 'chatwidget'
         ];
     }
 

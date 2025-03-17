@@ -12,6 +12,6 @@ class VehicleInfoBuilder
      */
     public function buildVehicleInfoPrompt($vehicleInfo): string
     {
-        return $vehicleInfo ? "### VEHICLE INFORMATION: ### \n This is the vehicle informations: \n" . $vehicleInfo . ". \n" : "";
+        return $vehicleInfo ? "### VEHICLE INFORMATION: ### \n This is the vehicle information for you to create the description: \n" . $vehicleInfo . ". \n" : "";
     }
 }
