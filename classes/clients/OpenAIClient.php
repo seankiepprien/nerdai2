@@ -5,9 +5,9 @@ use Nerd\Nerdai\Classes\ClientInterface;
 use OpenAI;
 
 /**
- * Class Client
+ * Class OpenAIClient
  *
- * Wrapper class for interacting with the OpenAI API.
+ * Wrapper class for interacting with the OpenAI API, including Assistants.
  *
  * @package Nerd\Nerdai\classes
  */
@@ -16,29 +16,25 @@ class OpenAIClient implements ClientInterface
     protected $client;
     protected string $apiKey;
     protected ?string $organization = null;
-    protected array $headers = ['Openai-Beta', 'assistant=v2'];
+    protected array $headers = ['Openai-Beta', 'assistants=v1'];
     protected array $parameters = [];
-    protected string $model = 'gpt-4o';
-    protected ?string $assistantId = null;
+    protected string $model = 'gpt-3.5-turbo-instruct';
 
-    public function __construct(string $apiKey, string $organization = null, array $parameters)
+    public function __construct(string $apiKey, string $organization = null, array $parameters = [])
     {
         $this->setApiKey($apiKey);
         $this->setOrganization($organization);
-        if (array_key_exists('model', $parameters)) {
+
+        if (isset($parameters['model'])) {
             $this->setModel($parameters['model']);
         }
 
-        if (array_key_exists('headers', $parameters)) {
+        if (isset($parameters['headers'])) {
             $this->setHttpHeaders($parameters['headers']);
         }
 
-        if (array_key_exists('parameters', $parameters)) {
+        if (isset($parameters['parameters'])) {
             $this->setParameters($parameters['parameters']);
-        }
-
-        if (array_key_exists('assistantId', $parameters)) {
-            $this->assistantId = $parameters['assistantId'];
         }
 
         $this->client = $this->makeClient();
@@ -49,7 +45,7 @@ class OpenAIClient implements ClientInterface
         $this->apiKey = $key;
     }
 
-    public function setOrganization(string $organization): void
+    public function setOrganization(?string $organization): void
     {
         $this->organization = $organization;
     }
@@ -74,11 +70,6 @@ class OpenAIClient implements ClientInterface
         return $this->model;
     }
 
-    public function setAssistantId(?string $assistantId): void
-    {
-        $this->assistantId = $assistantId;
-    }
-
     public function getParameters(): array
     {
         return $this->parameters;
@@ -95,15 +86,17 @@ class OpenAIClient implements ClientInterface
         return $client;
     }
 
+    /**
+     * Standard chat completion query
+     *
+     * @param array $options Chat completion options
+     * @return array Response from the API
+     * @throws Exception
+     */
     public function query(array $options): array
     {
-        if(isset($options['assistant_mode']) && $options['assistant_mode'] === true) {
-            return $this->assistantQuery($options);
-        }
-
         try {
             $response = $this->client->chat()->create($options);
-
             return $response->toArray();
         } catch (Exception $e) {
             throw new Exception('OpenAI API Query failed: ' . $e->getMessage());
@@ -111,157 +104,271 @@ class OpenAIClient implements ClientInterface
     }
 
     /**
-     * Query the Assistant API
+     * Create a new assistant
      *
-     * @param array $options Parameters for the Assistant API
-     * @return array Response from the API
+     * @param string $name Assistant name
+     * @param string $instructions Instructions for the assistant
+     * @param string $model Model to use for the assistant
+     * @param array $tools Tools to enable for the assistant
+     * @return array Assistant data
      * @throws Exception
      */
-    public function assistantQuery(array $options): array
+    public function createAssistant(string $name, string $instructions, string $model, array $tools = []): array
     {
-        $threadId = $options['thread_id'] ?? null;
-        $userMessage = $options['message'] ?? null;
-        $assistantId = $options['assistant_id'] ?? $this->assistantId;
-
-        if (!$userMessage) {
-            throw new Exception('No message provided for Assistant API');
-        }
-
-        if (!$assistantId) {
-            throw new Exception('No assistant ID provided for Assistant API');
-        }
-
         try {
-            // Create new thread if none is provided
-            if (!$threadId) {
-                $thread = $this->createThread();
-                $threadId = $thread['id'];
-            }
+            $response = $this->client->assistants()->create([
+                'name' => $name,
+                'instructions' => $instructions,
+                'model' => $model,
+                'tools' => $tools
+            ]);
 
-            // Add the user message to the thread
-            $this->addMessage($threadId, $userMessage);
-
-            // Run the Assistant
-            $run = $this->runAssistant($threadId, $assistantId);
-
-            // Run for the run to complete
-            $runStatus = $this->waitForRun($threadId, $run['id']);
-
-            // Get the messages
-            $messages = $this->getMessages($threadId, ['order' => 'desc', 'limit' => 1]);
-
-            return [
-                'thread_id' => $threadId,
-                'run' => $runStatus,
-                'messages' => $messages,
-                'response' => $messages['data'][0]['content'][0]['text']['value'] ?? null
-            ];
+            return $response->toArray();
         } catch (Exception $e) {
-            throw new Exception('Assistant API Query failed: ' . $e->getMessage());
+            throw new Exception('Failed to create assistant: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Retrieve an assistant by ID
+     *
+     * @param string $assistantId The ID of the assistant to retrieve
+     * @return array Assistant data
+     * @throws Exception
+     */
+    public function getAssistant(string $assistantId): array
+    {
+        try {
+            $response = $this->client->assistants()->retrieve($assistantId);
+            return $response->toArray();
+        } catch (Exception $e) {
+            throw new Exception('Failed to retrieve assistant: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Update an existing assistant
+     *
+     * @param string $assistantId The ID of the assistant to update
+     * @param array $data The data to update
+     * @return array Updated assistant data
+     * @throws Exception
+     */
+    public function updateAssistant(string $assistantId, array $data): array
+    {
+        try {
+            $response = $this->client->assistants()->update($assistantId, $data);
+            return $response->toArray();
+        } catch (Exception $e) {
+            throw new Exception('Failed to update assistant: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Delete an assistant
+     *
+     * @param string $assistantId The ID of the assistant to delete
+     * @return array Response data
+     * @throws Exception
+     */
+    public function deleteAssistant(string $assistantId): array
+    {
+        try {
+            $response = $this->client->assistants()->delete($assistantId);
+            return $response->toArray();
+        } catch (Exception $e) {
+            throw new Exception('Failed to delete assistant: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * List all assistants
+     *
+     * @param array $params Optional parameters like limit, order, etc.
+     * @return array List of assistants
+     * @throws Exception
+     */
+    public function listAssistants(array $params = []): array
+    {
+        try {
+            $response = $this->client->assistants()->list($params);
+            return $response->toArray();
+        } catch (Exception $e) {
+            throw new Exception('Failed to list assistants: ' . $e->getMessage());
         }
     }
 
     /**
      * Create a new thread
      *
-     *  @return array The response from the API
-     *  @throws Exception
-     * */
-    public function createThread(): array
-    {
-        try {
-            $response = $this->client->threads()->create();
-            return $response->toArray();
-        } catch (Exception $e) {
-            throw new Exception('Thread creation failed: ' . $e->getMessage());
-        }
-    }
-
-    /**
-     * Run an assistant
-     *
-     * @param string $threadId The ID of the thread to run the assistant on
-     * @param string $assistantId The ID of the assistant to run
-     * @return array The response from the API
+     * @param array $messages Optional initial messages for the thread
+     * @return array Thread data
      * @throws Exception
      */
-    public function runAssistant(string $threadId, string $assistantId): array
+    public function createThread(array $messages = []): array
     {
         try {
-            $response = $this->client->threads()->runs()->create($threadId, [
-                'assistant_id' => $assistantId
-            ]);
-            return $response->toArray();
-        } catch (Exception $e) {
-            throw new Exception('Failed to run assistant: ' . $e->getMessage());
-        }
-    }
-
-    /**
-     * Wait for an assistant run to complete
-     *
-     * @param string $threadId The ID of the thread to wait for
-     * @param string $runId The ID of the run to wait for
-     * @param int $timeout The timeout in seconds
-     * @return array The response from the API
-     * @throws Exception
-     */
-    public function waitForRun(string $threadId, string $runId, int $timeout = 30): array
-    {
-        $startTime = time();
-
-        while ((time() - $startTime) < $timeout) {
-            try {
-                $runStatus = $this->client->threads()->runs()->retrieve($threadId, $runId)->toArray();
-
-                if ($runStatus['status'] === 'completed') {
-                    return $runStatus;
-                }
-
-                sleep(2);
-            } catch (Exception $e) {
-                throw new Exception('Failed to get run status: ' . $e->getMessage());
+            $params = [];
+            if (!empty($messages)) {
+                $params['messages'] = $messages;
             }
-        }
 
-        throw new Exception('Timeout waiting for assistant run to complete.');
+            $response = $this->client->threads()->create($params);
+            return $response->toArray();
+        } catch (Exception $e) {
+            throw new Exception('Failed to create thread: ' . $e->getMessage());
+        }
     }
 
     /**
-     * Get messages from a thread
+     * Retrieve a thread by ID
      *
-     * @param string $threadId The ID of the thread to get messages from
-     * @param array $options The options to pass to the API
-     * @return array The response from the API
+     * @param string $threadId The ID of the thread to retrieve
+     * @return array Thread data
      * @throws Exception
      */
-    public function getMessages(string $threadId, array $options = []): array
+    public function getThread(string $threadId): array
     {
         try {
-            return $this->client->threads()->messages()->list($threadId, $options)->toArray();
+            $response = $this->client->threads()->retrieve($threadId);
+            return $response->toArray();
         } catch (Exception $e) {
-            throw new Exception('Failed to get messages: ' . $e->getMessage());
+            throw new Exception('Failed to retrieve thread: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Delete a thread
+     *
+     * @param string $threadId The ID of the thread to delete
+     * @return array Response data
+     * @throws Exception
+     */
+    public function deleteThread(string $threadId): array
+    {
+        try {
+            $response = $this->client->threads()->delete($threadId);
+            return $response->toArray();
+        } catch (Exception $e) {
+            throw new Exception('Failed to delete thread: ' . $e->getMessage());
         }
     }
 
     /**
      * Add a message to a thread
      *
-     * @param string $threadId The ID of the thread to add the message to
-     * @param string $message The message to add to the thread
-     * @return array The response from the API
+     * @param string $threadId The ID of the thread
+     * @param string $role The role of the message sender (user)
+     * @param string $content The content of the message
+     * @param array $attachments Optional file attachments
+     * @return array Message data
      * @throws Exception
      */
-    public function addMessage(string $threadId, string $message): array
+    public function addMessage(string $threadId, string $role, string $content, array $attachments = []): array
     {
         try {
-            $response = $this->client->threads()->messages()->create($threadId, [
-                'role' => 'user',
-                'content' => $message
-            ]);
+            $params = [
+                'role' => $role,
+                'content' => $content
+            ];
+
+            if (!empty($attachments)) {
+                $params['attachments'] = $attachments;
+            }
+
+            $response = $this->client->threads()->messages()->create($threadId, $params);
             return $response->toArray();
         } catch (Exception $e) {
-            throw new Exception('Message addition failed: ' . $e->getMessage());
+            throw new Exception('Failed to add message to thread: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * List messages in a thread
+     *
+     * @param string $threadId The ID of the thread
+     * @param array $params Optional parameters like limit, order, etc.
+     * @return array List of messages
+     * @throws Exception
+     */
+    public function listMessages(string $threadId, array $params = []): array
+    {
+        try {
+            $response = $this->client->threads()->messages()->list($threadId, $params);
+            return $response->toArray();
+        } catch (Exception $e) {
+            throw new Exception('Failed to list messages: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Create a run (execute the assistant on a thread)
+     *
+     * @param string $threadId The ID of the thread
+     * @param string $assistantId The ID of the assistant
+     * @param array $params Optional parameters
+     * @return array Run data
+     * @throws Exception
+     */
+    public function createRun(string $threadId, string $assistantId, array $params = []): array
+    {
+        try {
+            $runParams = array_merge([
+                'assistant_id' => $assistantId
+            ], $params);
+
+            $response = $this->client->threads()->runs()->create($threadId, $runParams);
+            return $response->toArray();
+        } catch (Exception $e) {
+            throw new Exception('Failed to create run: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Retrieve a run
+     *
+     * @param string $threadId The ID of the thread
+     * @param string $runId The ID of the run
+     * @return array Run data
+     * @throws Exception
+     */
+    public function getRun(string $threadId, string $runId): array
+    {
+        try {
+            $response = $this->client->threads()->runs()->retrieve($threadId, $runId);
+            return $response->toArray();
+        } catch (Exception $e) {
+            throw new Exception('Failed to retrieve run: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Wait for a run to complete
+     *
+     * @param string $threadId The ID of the thread
+     * @param string $runId The ID of the run
+     * @param int $timeout Maximum time to wait in seconds
+     * @param int $pollingInterval Time between polling attempts in seconds
+     * @return array Completed run data
+     * @throws Exception
+     */
+    public function waitForRun(string $threadId, string $runId, int $timeout = 300, int $pollingInterval = 2): array
+    {
+        $startTime = time();
+        $completedStatuses = ['completed', 'failed', 'cancelled', 'expired'];
+
+        while (true) {
+            $run = $this->getRun($threadId, $runId);
+
+            if (in_array($run['status'], $completedStatuses)) {
+                return $run;
+            }
+
+            if (time() - $startTime > $timeout) {
+                throw new Exception("Run did not complete within timeout period of {$timeout} seconds");
+            }
+
+            sleep($pollingInterval);
         }
     }
 

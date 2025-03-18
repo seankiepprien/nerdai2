@@ -31,6 +31,10 @@ class TaskFactory
                 return new \Nerd\Nerdai\Classes\tasks\VehicleDescriptionTask();
             case 'vision':
                 return new \Nerd\Nerdai\Classes\tasks\VisionTask();
+            case 'assistant':
+                $assistantid = $options ['assistant_id'] ?? null;
+                $threadId = $options['thread_id'] ?? null;
+                return new \Nerd\Nerdai\Classes\tasks\AssistantTask($assistantid, $threadId);
             default:
                 throw new Exception('No task found for mode: ' . $mode);
         }
