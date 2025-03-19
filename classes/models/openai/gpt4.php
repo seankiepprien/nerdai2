@@ -9,8 +9,10 @@ use Nerd\Inventory\Models\Dealer;
 use Nerd\Inventory\Models\Vehicle;
 use Nerd\Nerdai\Classes\AIModelInterface;
 use Nerd\Nerdai\Classes\ClientFactory;
+use Nerd\Nerdai\Classes\services\AssistantService;
 use Nerd\Nerdai\Classes\TaskFactory;
 use Nerd\Nerdai\Classes\TaskInterface;
+use Nerd\Nerdai\Models\Assistant;
 use Nerd\NerdAI\Models\NerdAiSettings as Settings;
 use Throwable;
 
@@ -29,16 +31,18 @@ class gpt4 implements AIModelInterface
      * summarize - Summarize the text
      * prompt - Generate a prompt for the text
      * html-code - Generate HTML code
+     * vehicle-description - Generate a vehicle description
      *
      * Mode List:
      * text-generation - Generate text from a prompt
+     * assistant - Generate an assistant response
      * More coming soon.
      *
-     * @param string $prompt The chat messages array.
+     * @param string|array $prompt The chat messages array.
      * @param string $task The task to use for formatting the prompt.
      * @param string $mode The mode to use for formatting the prompt.
+     * @param Vehicle|null $vehicle
      * @return array The final formatted response.
-     * @throws Exception
      * @throws Throwable
      */
     public static function query(
@@ -47,6 +51,10 @@ class gpt4 implements AIModelInterface
         string $mode,
         Vehicle|null $vehicle
     ): array {
+        // Handle Assistant API mode differently
+        if ($mode === 'assistant-api') {
+            return self::assistantQuery($prompt, $task, $vehicle);
+        }
         // Handle batch processing of prompt is an array of IDs
         if (is_array($prompt)) {
             $batchId = uniqid('batch_', true);
@@ -54,6 +62,80 @@ class gpt4 implements AIModelInterface
         }
 
         return self::singleQuery($prompt, $task, $mode, $vehicle);
+    }
+
+    /**
+     * Process a query using the Assistant API
+     *
+     * @param string|array $prompt The input prompt or paremeters
+     * @param string $task The task identifier
+     * @param Vehicle|null $vehicle Optional vehicle context
+     * @return array Response data
+     * @throws Exception
+     */
+    protected static function assistantQuery(
+        string|array $prompt,
+        string $task,
+        Vehicle|null $vehicle
+    ): array {
+        try {
+            $assistantService = new AssistantService();
+
+            // Get the necessary parameters
+            $assistantId = null;
+            $threadId = null;
+            $message = '';
+
+            if (is_array($prompt)) {
+                $assistantId = $prompt['assistant_id'] ?? null;
+                $threadId = $prompt['thread_id'] ?? null;
+                $message = $prompt['message'] ?? '';
+            } else {
+                $message = $prompt;
+
+                // If no assistant specified, get the default
+                $defaultAssistant = Assistant::where('is_active', true)->first();
+                if ($defaultAssistant) {
+                    $assistantId = $defaultAssistant->id;
+                }
+            }
+            if (!$assistantId) {
+                throw new Exception('Assistant ID is required for assistant mode');
+            }
+
+            // Convert thread ID from string to int if needed
+            if (is_string($threadId) && is_numeric($threadId)) {
+                $threadId = (int) $threadId;
+            }
+
+            // Process any vehicle information
+            $parameters = [];
+            if ($vehicle) {
+                $dealerId = $vehicle->dealer_id;
+                $dealerInfo = Dealer::where('id', $dealerId)->first();
+
+                // Add context about the vehicle/dealer
+                $vehicleContext = "Vehicle: " . json_encode($vehicle->getAttributes());
+                $dealerContext = "Dealer: " . json_encode($dealerInfo ? $dealerInfo->getAttributes() : null);
+
+                $message = $vehicleContext . "\n" . $dealerContext . "\n" . $message;
+            }
+
+            // Send the conversation
+            $response = $assistantService->conversation($assistantId, $message, $threadId, $parameters);
+
+            return [
+                'result' => $response['message'],
+                'thread_id' => $response['thread_id'],
+                'logID' => $response['logID']
+            ];
+        } catch (Exception $e) {
+            return [
+                'result' => $e->getMessage(),
+                'thread_id' => null,
+                'logID' => null
+            ];
+        }
     }
 
     protected static function singleQuery(

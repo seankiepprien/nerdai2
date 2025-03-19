@@ -1,0 +1,31 @@
+{% if messages and messages.count %}
+{% for message in messages %}
+<div class="message {{ message.role }}-message" data-timestamp="{{ message.created_at }}">
+    <div class="message-avatar">
+        <img src="{{ message.role == 'user' ? userAvatar : assistantAvatar }}" alt="Avatar">
+    </div>
+    <div class="message-content">
+        <div class="message-text message-markdown">
+            {{ message.content|markdown }}
+        </div>
+        <div class="message-time">
+            {{ message.created_at|date('g:i A') }}
+        </div>
+    </div>
+</div>
+{% endfor %}
+{% else %}
+<div class="message assistant-message" data-timestamp="{{ "now"|date('Y-m-d H:i:s') }}">
+<div class="message-avatar">
+    <img src="{{ assistantAvatar }}" alt="Assistant">
+</div>
+<div class="message-content">
+    <div class="message-text message-markdown">
+        Hello! I'm {{ assistant.name }}. How can I assist you today?
+    </div>
+    <div class="message-time">
+        {{ "now"|date('g:i A') }}
+    </div>
+</div>
+</div>
+{% endif %}

@@ -16,17 +16,23 @@ return new class extends Migration
      */
     public function up()
     {
-        Schema::create('nerd_nerdai_assistants', function(Blueprint $table) {
-            $table->id();
-            $table->string('name');
-            $table->string('assistant_id')->unique();
-            $table->text('description')->nullable();
-            $table->text('instructions')->nullable();
-            $table->string('model');
-            $table->text('tools')->nullable();
-            $table->boolean('is_active')->default(true);
-            $table->timestamps();
-        });
+        if (!Schema::hasTable('nerd_nerdai_assistants')) {
+            Schema::create('nerd_nerdai_assistants', function(Blueprint $table) {
+                $table->id();
+                $table->string('name');
+                $table->string('assistant_id')->unique();
+                $table->text('description')->nullable();
+                $table->text('instructions')->nullable();
+                $table->string('model');
+                $table->text('tools')->nullable();
+                $table->boolean('enable_code_interpreter')->default(false);
+                $table->boolean('enable_retrieval')->default(false);
+                $table->boolean('enable_function_calling')->default(false);
+                $table->text('function_schemas')->nullable();
+                $table->boolean('is_active')->default(true);
+                $table->timestamps();
+            });
+        }
     }
 
     /**
@@ -34,6 +40,8 @@ return new class extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('nerd_nerdai_assistants');
+        if (Schema::hasTable('nerd_nerdai_assistants')) {
+            Schema::dropIfExists('nerd_nerdai_assistants');
+        }
     }
 };

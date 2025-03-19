@@ -6,3 +6,33 @@ columns:
     id:
         label: ID
         searchable: true
+        invisible: true
+
+    name:
+        label: Name
+        searchable: true
+
+    description:
+        label: Description
+        searchable: true
+
+    model:
+        label: Model
+        searchable: true
+
+    is_active:
+        label: Active
+        type: switch
+
+    assistant_id:
+        label: OpenAI ID
+        searchable: true
+
+    created_at:
+        label: Created
+        type: datetime
+        invisible: true
+
+    updated_at:
+        label: Last Updated
+        type: datetime

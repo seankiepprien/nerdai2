@@ -2,6 +2,7 @@
 
 use Backend;
 use Event;
+use Parsedown;
 use System\Classes\PluginBase;
 use Log;
 
@@ -65,10 +66,8 @@ class Plugin extends PluginBase
      */
     public function registerComponents()
     {
-        return []; // Remove this line to activate
-
         return [
-            'Nerd\Nerdai\Components\MyComponent' => 'myComponent',
+            'Nerd\Nerdai\Components\AssistantChat' => 'assistantChat'
         ];
     }
 
@@ -103,6 +102,12 @@ class Plugin extends PluginBase
                 'permissions' => ['nerd.nerdai.*'],
                 'order'       => 500,
                 'sideMenu'    => [
+                    'assistant' => [
+                        'label'       => 'Assistant',
+                        'icon'        => 'icon-comment',
+                        'url'         => Backend::url('nerd/nerdai/assistants'),
+                        'permissions' => ['nerd.nerdai.assistant'],
+                    ],
                     'logs' => [
                         'label'       => 'Logs',
                         'icon'        => 'icon-copy',
@@ -146,4 +151,25 @@ class Plugin extends PluginBase
         ];
     }
 
+    public function registerMarkupTags()
+    {
+        return [
+            'filters' => [
+                'markdown' => [$this, 'parseMarkdown']
+            ]
+        ];
+    }
+
+    public function registerAssistantFunctionHandlers()
+    {
+        return [
+            'toyota_steustache' => \Nerd\Nerdai\Classes\AssistantHandlers\ToyotaStEustacheHandlers::class
+        ];
+    }
+
+    public function parseMarkdown($text)
+    {
+        $parsedown = new Parsedown();
+        return $parsedown->text($text);
+    }
 }

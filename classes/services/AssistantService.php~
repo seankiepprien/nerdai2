@@ -348,42 +348,4 @@ class AssistantService
         // Get the response
         return $assistant->getResponse($threadId, $assistantId, $parameters);
     }
-
-    /**
-     * Get function handler for an assistant
-     *
-     * @param Assistant $assistant The assistant model
-     * @return object|null Function handler instance
-     */
-    public function getFunctionHandler(Assistant $assistant)
-    {
-        $handlerId = $assistant->handler_id ?: 'default';
-        $handlers = $this->getRegisteredHandlers();
-
-        if (isset($handlers[$handlerId])) {
-            return new $handlers[$handlerId]();
-        }
-
-        return null;
-    }
-
-    /**
-     * Get all registered function handlers from plugins
-     *
-     * @return array Handler class mapping
-     */
-    protected function getRegisteredHandlers()
-    {
-        $handlers = [];
-
-        // Get handlers from all plugins
-        $plugins = \System\Classes\PluginManager::instance()->getPlugins();
-        foreach ($plugins as $plugin) {
-            if (method_exists($plugin, 'registerAssistantFunctionHandlers')) {
-                $handlers = array_merge($handlers, $plugin->registerAssistantFunctionHandlers());
-            }
-        }
-
-        return $handlers;
-    }
 }

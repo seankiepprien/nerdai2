@@ -3,6 +3,107 @@
 # ===================================
 
 fields:
-    id:
-        label: ID
-        disabled: true
+    name:
+        label: Name
+        span: left
+        required: true
+
+    model:
+        label: Model
+        span: right
+        type: dropdown
+        options:
+            gpt-4-1106-preview: GPT-4 (1106 Preview)
+            gpt-4-0613: GPT-4 (0613)
+            gpt-4-vision-preview: GPT-4 Vision (Preview)
+            gpt-4o: GPT-4o
+            gpt-3.5-turbo-1106: GPT-3.5 Turbo (1106)
+            gpt-3.5-turbo-instruct: GPT-3.5 Turbo Instruct
+        required: true
+
+    description:
+        label: Description
+        type: textarea
+        size: small
+
+    instructions:
+        label: Instructions
+        type: codeeditor
+        language: markdown
+        theme: twilight
+        size: giant
+        required: true
+
+secondaryTabs:
+    fields:
+        tools_section:
+            label: Tools
+            tab: Tools
+            type: section
+            comment: Enable tools for this assistant
+
+        enable_code_interpreter:
+            label: Code Interpreter
+            tab: Tools
+            type: switch
+            comment: Allow the assistant to run code and do computations
+
+        enable_retrieval:
+            label: Retrieval
+            tab: Tools
+            type: switch
+            comment: Allow the assistant to retrieve knowledge from uploaded files
+
+        enable_function_calling:
+            label: Function Calling
+            tab: Tools
+            type: switch
+            comment: Allow the assistant to call functions defined below
+
+        function_schemas:
+            label: Function Schemas
+            tab: Tools
+            type: codeeditor
+            language: json
+            theme: twilight
+            size: giant
+            trigger:
+                action: show
+                field: enable_function_calling
+                condition: checked
+            comment: Define your function schemas in JSON format
+            default: |
+                [
+                  {
+                    "name": "get_weather",
+                    "description": "Get the current weather in a given location",
+                    "parameters": {
+                      "type": "object",
+                      "properties": {
+                        "location": {
+                          "type": "string",
+                          "description": "The city and state, e.g. San Francisco, CA"
+                        },
+                        "unit": {
+                          "type": "string",
+                          "enum": ["celsius", "fahrenheit"],
+                          "description": "The temperature unit to use"
+                        }
+                      },
+                      "required": ["location"]
+                    }
+                  }
+                ]
+
+        assistant_id:
+            label: OpenAI Assistant ID
+            tab: Advanced
+            span: left
+            readonly: true
+
+        is_active:
+            label: Active
+            tab: Advanced
+            type: switch
+            span: right
+            default: true

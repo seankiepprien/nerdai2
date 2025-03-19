@@ -2,3 +2,8 @@
 1.0.2:
     - Create logs table
     - create_logs_table.php
+1.1.0:
+    - Added OpenAI Assistant API support
+    - create_assistants_table.php
+    - create_threads_table.php
+    - create_messages_table.php

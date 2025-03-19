@@ -48,7 +48,7 @@ class OpenAIAssistant implements AssistantInterface
         } catch (Throwable $e) {
             $this->logError('Failed to create asistant', $e, [
                 'name' => $name,
-                'instructions' => substr($instructions,0 , 100) . '...'
+                'instructions' => substr($instructions, 0, 100) . '...'
             ]);
             throw $e;
         }
@@ -96,7 +96,7 @@ class OpenAIAssistant implements AssistantInterface
      * List all assistants
      *
      * @param array $parameters Optional filtering parameters
-     * @return array Asssitants list
+     * @return array Assistants list
      */
     public function listAssistants(array $parameters = []): array
     {
@@ -161,50 +161,68 @@ class OpenAIAssistant implements AssistantInterface
     public function runAssistant(string $threadId, string $assistantId, array $parameters = []): array
     {
         try {
-            return $this->client->createRun($threadId, $assistantId, $parameters);
+            // Get the assistant
+            $assistant = Assistant::where('assistant_id', $assistantId)->firstOrFail();
 
+            // Create a run on the thread with the assistant
+            $run = $this->client->createRun($threadId, $assistantId, $parameters);
             $runId = $run['id'];
 
-            // Wait for the run to complete
-            $timeout = $parameters['timeout'] ?? self::DEFAULT_TIMEOUT;
-            $pollInterval = $parameters['poll_interval'] ?? self::DEFAULT_POLL_INTERVAL;
+            // Wait for the run to complete or require action
+            $timeout = $parameters['timeout'] ?? 120;
+            $pollInterval = $parameters['poll_interval'] ?? 2;
 
-            $completedRun = $this->client->waitForRun($theadId, $runId, $timeout, $pollInterval);
+            // Loop until run is completed or fails
+            $startTime = time();
+            while (true) {
+                $runStatus = $this->client->getRun($threadId, $runId);
 
-            // Log the run
-            $model = Settings::get('openai_model');
-            $log = (new \Nerd\Nerdai\Models\Log)->logRecord(
-                $model,
-                'assistant-run',
-                'assistant-api',
-                [
-                    'thread_id' => $threadId,
-                    'assistant_id' => $assistantId,
-                    'run_id' => $runId
-                ],
-                [
-                    'status' => $completedRun['status'],
-                    'completed_at' => $completedRun['completed_at'] ?? null,
-                ]
-            );
+                // Check if timeout reached
+                if (time() - $startTime > $timeout) {
+                    throw new Exception("Run timed out after {$timeout} seconds");
+                }
 
-            // If the run completed successfully, retrieve the messages
-            if ($completedRun['status'] === 'completed') {
-                $messages = $this->getThreadMessages($threadId, [
-                    'order' => 'desc',
-                    'limit' => 1
-                ]);
+                // Process function calls if needed
+                if ($runStatus['status'] === 'requires_action' &&
+                    isset($runStatus['required_action']['type']) &&
+                    $runStatus['required_action']['type'] === 'submit_tool_outputs') {
 
-                return [
-                    'run' => $completedRun,
-                    'messages' => $messages,
-                    'logId' => $log->id
-                ];
+                    $this->processFunctionCalls($threadId, $runId, $assistant);
+
+                    // Continue polling after submitting tool outputs
+                    sleep($pollInterval);
+                    continue;
+                }
+
+                // Check if run is completed or failed
+                if (in_array($runStatus['status'], ['completed', 'failed', 'cancelled', 'expired'])) {
+                    break;
+                }
+
+                // Wait before checking again
+                sleep($pollInterval);
             }
 
-            throw new Exception("Run didn't complete successfully. Status: " . $completedRun['status']);
-        } catch (Throwable $e) {
-            $this->logError('Run assistant error', $e, [
+            // Check if the run completed successfully
+            if ($runStatus['status'] !== 'completed') {
+                throw new Exception("Run failed with status: " . $runStatus['status']);
+            }
+
+            // Get the latest messages from the thread
+            $messages = $this->client->listMessages($threadId, [
+                'order' => 'desc',
+                'limit' => 1
+            ]);
+
+            // Return the response
+            return [
+                'run' => $runStatus,
+                'messages' => $messages,
+                'assistant_id' => $assistantId
+            ];
+        } catch (Exception $e) {
+            \Log::error('Error running assistant', [
+                'error' => $e->getMessage(),
                 'thread_id' => $threadId,
                 'assistant_id' => $assistantId
             ]);
@@ -228,7 +246,7 @@ class OpenAIAssistant implements AssistantInterface
     }
 
     /**
-     * Run a conversationnal assistant with a single prompt
+     * Run a conversational assistant with a single prompt
      *
      * @param string $assistantId Assistant ID
      * @param string $prompt User prompt
@@ -290,5 +308,146 @@ class OpenAIAssistant implements AssistantInterface
             'trace' => $exception->getTraceAsString(),
             'context' => $context
         ]);
+    }
+
+    public function deleteAssistant(string $assistantId)
+    {
+        try {
+            $this->client->deleteAssistant($assistantId);
+        } catch (Throwable $e) {
+            $this->logError('Failed to delete assistant', $e, [
+                'assistant_id' => $assistantId
+            ]);
+            throw $e;
+        }
+    }
+
+    /**
+     * Get response from an assistant after adding a message to a thread
+     *
+     * @param string $threadId OpenAI thread ID
+     * @param string $assistantId OpenAI assistant ID
+     * @param array $parameters Additional parameters
+     * @return array Response data
+     */
+    public function getResponse(string $threadId, string $assistantId, array $parameters = []): array
+    {
+        try {
+            // Get response using the client
+            $parameters['assistant_id'] = $assistantId;
+
+            $response = $this->client->getAssistantResponse($threadId, $parameters);
+
+            // Process and format the response
+            $result = [
+                'success' => true,
+                'message' => $this->extractMessageContent($response['messages']),
+                'assistant_id' => $assistantId,
+                'thread_id' => $threadId
+            ];
+
+            return $result;
+        } catch (Exception $e) {
+            Log::error('Error getting assistant response: ' . $e->getMessage());
+            throw $e;
+        }
+    }
+
+    /**
+     * Extract message content from the messages response
+     *
+     * @param array $messages Messages from the API
+     * @return string The extracted message content
+     */
+    private function extractMessageContent(array $messages): string
+    {
+        // Get the first message (should be the assistant's response)
+        if (!isset($messages['data']) || empty($messages['data'])) {
+            return '';
+        }
+
+        $message = $messages['data'][0];
+
+        // Check if it's an assistant message
+        if ($message['role'] !== 'assistant') {
+            return '';
+        }
+
+        // Extract the content
+        if (isset($message['content'][0]['text']['value'])) {
+            return $message['content'][0]['text']['value'];
+        }
+
+        return '';
+    }
+
+    /**
+     * Process a run that requires function calling
+     *
+     * @param string $threadId Thread ID
+     * @param string $runId Run ID
+     * @param Assistant $assistant Assistant model
+     * @return array Result of function execution
+     */
+    protected function processFunctionCalls(string $threadId, string $runId, Assistant $assistant)
+    {
+        // Get required actions from the run
+        $requiredAction = $this->client->getRequiredAction($threadId, $runId);
+
+        if (!isset($requiredAction['submit_tool_outputs'])) {
+            throw new Exception('Run does not require tool outputs');
+        }
+
+        $toolCalls = $requiredAction['submit_tool_outputs']['tool_calls'] ?? [];
+        $toolOutputs = [];
+
+        // Get function handler for this assistant
+        $handler = $this->assistantService->getFunctionHandler($assistant);
+
+        if (!$handler) {
+            throw new Exception('No function handler found for assistant ' . $assistant->name);
+        }
+
+        // Process each tool call
+        foreach ($toolCalls as $toolCall) {
+            // Only process function calls
+            if ($toolCall['type'] !== 'function') {
+                continue;
+            }
+
+            $functionName = $toolCall['function']['name'] ?? '';
+            $functionArguments = json_decode($toolCall['function']['arguments'] ?? '{}', true);
+
+            // Log the function call
+            \Log::info('Processing function call', [
+                'assistant' => $assistant->name,
+                'function' => $functionName,
+                'arguments' => $functionArguments
+            ]);
+
+            try {
+                // Call the function handler
+                $output = $handler->processFunction($functionName, $functionArguments, $threadId);
+
+                $toolOutputs[] = [
+                    'tool_call_id' => $toolCall['id'],
+                    'output' => json_encode($output)
+                ];
+            } catch (Exception $e) {
+                // Log error and provide error message as output
+                \Log::error('Function call error', [
+                    'function' => $functionName,
+                    'error' => $e->getMessage()
+                ]);
+
+                $toolOutputs[] = [
+                    'tool_call_id' => $toolCall['id'],
+                    'output' => json_encode(['error' => $e->getMessage()])
+                ];
+            }
+        }
+
+        // Submit the tool outputs
+        return $this->client->submitToolOutputs($threadId, $runId, $toolOutputs);
     }
 }

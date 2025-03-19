@@ -16,21 +16,23 @@ return new class extends Migration
      */
     public function up()
     {
-        Schema::create('nerd_nerdai_threads', function(Blueprint $table) {
-            $table->id();
-            $table->string('thread_id')->unique();
-            $table->integer('assistant_id')->unsigned();
-            $table->string('title')->nullable();
-            $table->text('description')->nullable();
-            $table->text('metadata')->nullable();
-            $table->boolean('is_active')->default(true);
-            $table->timestamps();
+        if (!Schema::hasTable('nerd_nerdai_threads')) {
+            Schema::create('nerd_nerdai_threads', function(Blueprint $table) {
+                $table->id();
+                $table->string('thread_id')->unique();
+                $table->integer('assistant_id')->unsigned();
+                $table->string('title')->nullable();
+                $table->text('description')->nullable();
+                $table->text('metadata')->nullable();
+                $table->boolean('is_active')->default(true);
+                $table->timestamps();
 
-            $table->foreign('assistant_id')
-                ->references('id')
-                ->on('nerd_nerdai_assistants')
-                ->onDelete('cascade');
-        });
+                $table->foreign('assistant_id')
+                    ->references('id')
+                    ->on('nerd_nerdai_assistants')
+                    ->onDelete('cascade');
+            });
+        }
     }
 
     /**
@@ -38,6 +40,8 @@ return new class extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('nerd_nerdai_threads');
+        if (Schema::hasTable('nerd_nerdai_threads')) {
+            Schema::dropIfExists('nerd_nerdai_threads');
+        }
     }
 };

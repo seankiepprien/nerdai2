@@ -16,20 +16,17 @@ return new class extends Migration
      */
     public function up()
     {
-        Schema::create('nerd_nerdai_messages', function(Blueprint $table) {
-            $table->id();
-            $table->string('message_id')->unique();
-            $table->integer('thread_id')->unsigned();
-            $table->enum('role', ['user', 'assistant', 'system']);
-            $table->text('content');
-            $table->text('metadata')->nullable();
-            $table->timestamps();
-
-            $table->foreign('thread_id')
-                ->references('id')
-                ->on('nerd_nerdai_threads')
-                ->onDelete('cascade');
-        });
+        if (!Schema::hasTable('nerd_nerdai_messages')) {
+            Schema::create('nerd_nerdai_messages', function(Blueprint $table) {
+                $table->id();
+                $table->string('message_id')->unique();
+                $table->foreignId('thread_id')->constrained('nerd_nerdai_threads')->onDelete('cascade');
+                $table->enum('role', ['user', 'assistant', 'system']);
+                $table->text('content');
+                $table->text('metadata')->nullable();
+                $table->timestamps();
+            });
+        }
     }
 
     /**
@@ -37,6 +34,8 @@ return new class extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('nerd_nerdai_messages');
+        if (Schema::hasTable('nerd_nerdai_messages')) {
+            Schema::dropIfExists('nerd_nerdai_messages');
+        }
     }
 };

@@ -16,7 +16,7 @@ class OpenAIClient implements ClientInterface
     protected $client;
     protected string $apiKey;
     protected ?string $organization = null;
-    protected array $headers = ['Openai-Beta', 'assistants=v1'];
+    protected array $headers = ['Openai-Beta', 'assistants=v2'];
     protected array $parameters = [];
     protected string $model = 'gpt-3.5-turbo-instruct';
 
@@ -302,6 +302,51 @@ class OpenAIClient implements ClientInterface
     }
 
     /**
+     * Get response from an assistant after adding a message to a thread
+     *
+     * @param string $threadId The thread ID
+     * @param array $parameters Additional parameters
+     * @return array Response data
+     * @throws Exception
+     */
+    public function getAssistantResponse(string $threadId, array $parameters = []): array
+    {
+        try {
+            $assistantId = $parameters['assistant_id'] ?? null;
+
+            if (!$assistantId) {
+                throw new Exception('Assistant ID is required');
+            }
+
+            $run = $this->createRun($threadId, $assistantId, $parameters);
+
+            $runId = $run['id'];
+
+            $timeout = $parameters['timeout'] ?? 120;
+            $pollInterval = $parameters['poll_interval'] ?? 2;
+
+            $completedRun = $this->waitForRun($threadId, $runId, $timeout, $pollInterval);
+
+            if ($completedRun['status'] !== 'completed') {
+                throw new Exception('Run failted with status: ' . $completedRun['status']);
+            }
+
+            $messages = $this->listMessages($threadId, [
+                'order' => 'desc',
+                'limit' => 1
+            ]);
+
+            return [
+                'run' => $completedRun,
+                'messages' => $messages,
+                'assistant_id' => $assistantId
+            ];
+        } catch (Exception $e) {
+            throw new Exception('Failed to get assistant response: ' . $e->getMessage());
+        }
+    }
+
+    /**
      * Create a run (execute the assistant on a thread)
      *
      * @param string $threadId The ID of the thread
@@ -416,5 +461,46 @@ class OpenAIClient implements ClientInterface
 
         $data = base64_encode(file_get_contents($filePath));
         return "data:$type;base64,$data";
+    }
+
+    /**
+     * Get required actions for a run
+     *
+     * @param string $threadId Thread ID
+     * @param string $runId Run ID
+     * @return array Required action data
+     */
+    public function getRequiredAction(string $threadId, string $runId): array
+    {
+        $run = $this->getRun($threadId, $runId);
+
+        if ($run['status'] !== 'requires_action') {
+            return [];
+        }
+
+        return $run['required_action'] ?? [];
+    }
+
+    /**
+     * Submit tool outputs for a run
+     *
+     * @param string $threadId Thread ID
+     * @param string $runId Run ID
+     * @param array $toolOutputs Tool outputs
+     * @return array Updated run data
+     */
+    public function submitToolOutputs(string $threadId, string $runId, array $toolOutputs): array
+    {
+        try {
+            $response = $this->client->threads()->runs()->submitToolOutputs(
+                $threadId,
+                $runId,
+                ['tool_outputs' => $toolOutputs]
+            );
+
+            return $response->toArray();
+        } catch (Exception $e) {
+            throw new Exception('Failed to submit tool outputs: ' . $e->getMessage());
+        }
     }
 }

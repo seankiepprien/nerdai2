@@ -28,8 +28,7 @@ class Assistant extends Model
      */
     public $rules = [
         'name' => 'required|string|max:255',
-        'assistant_id' => 'required|string|max:255',
-        'instruction' => 'required|string',
+        'instructions' => 'required|string',
         'model' => 'required|string|max:100',
     ];
 
@@ -44,7 +43,8 @@ class Assistant extends Model
         'instructions',
         'model',
         'tools',
-        'is_active'
+        'is_active',
+        'handler_id'
     ];
 
     /**

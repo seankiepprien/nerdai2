@@ -1,0 +1,31 @@
+# ===================================
+#  Form Behavior Config
+# ===================================
+
+# Record name
+name: Assistant
+
+# Model Form Field configuration
+form: $/nerd/nerdai/models/assistant/fields.yaml
+
+# Model Class name
+modelClass: Nerd\Nerdai\Models\Assistant
+
+# Default redirect location
+defaultRedirect: nerd/nerdai/assistants
+
+# Create page
+create:
+    title: Create Assistant
+    redirect: nerd/nerdai/assistants/update/:id
+    redirectClose: nerd/nerdai/assistants
+
+# Update page
+update:
+    title: Edit Assistant
+    redirect: nerd/nerdai/assistants
+    redirectClose: nerd/nerdai/assistants
+
+# Preview page
+preview:
+    title: Preview Assistant
